@@ -243,7 +243,7 @@ a { color: var(--accent); }
     border-top: 1px solid var(--line);
   }
   body:not([data-view="today"]) .minibar { display: block; }
-  [data-view] { display: none; }
+  body [data-view] { display: none; }
   body[data-view="today"] [data-view="today"], body[data-view="days"] [data-view="days"], body[data-view="frost"] [data-view="frost"],
   body[data-view="sun"] [data-view="sun"], body[data-view="trust"] [data-view="trust"] { display: block; }
 }
@@ -371,8 +371,8 @@ a { color: var(--accent); }
 
 <script>
 'use strict';
-const APP_VERSION = '2';
-const APP_BUILT = '02/11/2026 18h30';
+const APP_VERSION = '3';
+const APP_BUILT = '02/11/2026 19h00';
 const TZ = 'Europe/Paris';
 const HOUR = 3600e3, DAY = 864e5;
 const DEFAULT_PLACE = { name: 'Toulouse', lat: 43.6045, lon: 1.4442, cp: '31000', dep: 'Haute-Garonne' };
