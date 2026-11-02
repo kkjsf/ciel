@@ -5,8 +5,8 @@ doute pas des infos** : heure par heure, 15 jours, risque de gel, lever / couche
 
 ## Ce que c'est
 
-Une PWA **une seule page** (`index.html`, ~70 Ko, vanilla JS, zéro build) + `sw.js` +
-`manifest.json` + `icons/`. Interface en français, thème clair / sombre (auto, ou forcé en pied de
+Une PWA **une seule page** (`index.html`, ~120 Ko en v5, vanilla JS, zéro build) + `sw.js` +
+`manifest.json` + `icons/` + `normales/` (données précalculées, v5). Interface en français, thème clair / sombre (auto, ou forcé en pied de
 page). Pensée téléphone d'abord, deux colonnes au-delà de 920 px.
 
 Écran, de haut en bas :
@@ -16,10 +16,12 @@ page). Pensée téléphone d'abord, deux colonnes au-delà de 920 px.
   demain plus doux / plus frais), et **la pluie des 2 prochaines heures** au quart d'heure (cachée
   s'il ne pleut pas dans les 24 h).
 - **Heure par heure** sur 48 h (SVG) : pictogramme, courbe de température colorée, pluie en mm,
-  vent (flèche = sens où il va) et rafales, nuits grisées, séparateurs de jour.
+  vent (flèche = sens où il va) et rafales, **ressenti, humidité, UV** (v5, pastille colorée le jour),
+  nuits grisées, séparateurs de jour ; colonne de libellés fixe à gauche, le graphique défile.
 - **15 jours** : mini / maxi en barre colorée, **bande grise = plage des 51 scénarios ECMWF**
   (p10 des mini à p90 des maxi), pluie en mm + **proba de pluie ≥ 1 mm** (part des scénarios),
-  **indice de confiance sur 5** (points sous le jour). Un tap ouvre le détail du jour (graphique
+  **indice de confiance sur 5** (points sous le jour), **écart aux normales** sous chaque mini et
+  maxi (v5, coloré chaud / froid). Un tap ouvre le détail du jour (graphique
   horaire, vent, scénarios, modèle et run). Au-delà de J+4 le détail passe au pas de 3 h puis 6 h,
   parce que l'ECMWF ne sort pas de données horaires à ces échéances (on n'affiche pas une fausse
   précision interpolée).
@@ -29,8 +31,12 @@ page). Pensée téléphone d'abord, deux colonnes au-delà de 920 px.
 - **Soleil et lune** : arc du soleil avec position actuelle, lever / coucher, durée du jour et écart
   avec la veille, midi solaire, aube / crépuscule civils, heure dorée, compte à rebours du solstice,
   phase de lune dessinée, % éclairé, prochaines pleine et nouvelle lunes.
-- **En ce moment** : vent, humidité + point de rosée, pression + tendance 3 h, écart avec hier à la
-  même heure, UV, qualité de l'air (indice européen), pollens, pluie sur 24 h.
+- **En ce moment** (illustré en v5 : un picto coloré par tuile) : vent avec boussole, ressenti
+  expliqué, humidité en jauge + point de rosée, UV en échelle 11 cases, qualité de l'air en échelle
+  6 niveaux, pollens (3 premiers, 4 niveaux), pression + courbe des 24 h, écart avec hier, pluie sur
+  24 h en barres, **normales du jour et records du mois** de la station Météo-France.
+- **Explorer un jour** (v5, 6e onglet) : un lieu et une date au choix de 1940 à J+14, graphique
+  horaire, mini / maxi avec écart aux normales, pluie, rafales, ressenti, humidité, records, source.
 - **Sources et fiabilité** : chaque modèle, sa couverture réelle, l'heure de son run et de sa
   réception ; liens « Comparer sur meteofrance.com » (page de la commune) et « Vigilance <dépt> ».
 
@@ -47,6 +53,9 @@ ouvertes de Météo-France (Licence Ouverte Etalab) et de l'ECMWF (CC BY 4.0).
 | J+4,5 à J+15 | ECMWF IFS 9 km (Météo-France l'utilise aussi au-delà de 4 jours) | `ecmwf_ifs` |
 | confiance, probas | ECMWF ENS 51 membres, agrégats journaliers par membre | `ecmwf_ifs025` (ensemble-api) |
 | UV, air, pollens | Copernicus CAMS | air-quality-api |
+| normales 1991-2020, records | fiches climatologiques Météo-France (station la plus proche) | `normales/` précalculé |
+| Explorer : passé depuis l'automne 2022 | archives des prévisions AROME / ARPEGE / ECMWF | historical-forecast-api |
+| Explorer : avant | réanalyse ERA5 (Copernicus / ECMWF), depuis 1940 | archive-api |
 
 **Fusion** : pour chaque heure et chaque variable, la première valeur non nulle dans l'ordre
 AROME HD > AROME 2,5 > ARPEGE > ECMWF. La source d'une heure = le modèle qui a fourni sa
@@ -56,6 +65,29 @@ Requêtes par chargement : 1 forecast (4 modèles, ~110 Ko), 1 ensemble (~21 Ko)
 l'air, 4 meta.json. Recherche de commune : **API Adresse** (`api-adresse.data.gouv.fr`,
 `type=municipality`) ; commune d'une position GPS : `geo.api.gouv.fr/communes?lat&lon`.
 Soleil et lune calculés sur l'appareil (aucun appel).
+
+**Normales (v5)** : Météo-France publie ses **fiches climatologiques** en données ouvertes
+(meteo.data.gouv.fr, jeu « Fiches climatologiques », un `.data` texte par station : normales
+1991-2020 de Tx / Tn / pluie par mois, records avec leur date). Leur S3 n'envoie **pas de CORS** :
+`tools/build_normales.py <dossier de téléchargement> .` les télécharge (1 574 stations, ~9 Mo) et
+écrit `normales/index.json` (indicatif, lat, lon, altitude, période complète ou non) et
+`normales/<2 premiers chiffres>.json` (96 fichiers, 1,3 Mo en tout). Relancer de temps en temps pour
+les records (fiche éditée le 15/10/2026 au premier passage). Dans l'app : station = minimum de
+(distance + 1 km par 15 m d'écart d'altitude + 10 km si la normale ne couvre pas 1991-2020),
+60 km maximum ; altitude du lieu = `elevation` renvoyée par Open-Meteo ; au-delà de 100 m d'écart,
+correction de 0,65° par 100 m (écrite dans la carte Sources). Normale d'un jour : série de Fourier à
+3 harmoniques ajustée aux 12 moyennes mensuelles, chaque harmonique corrigée de l'effet de moyenne
+mensuelle (Toulouse le 2/11 : 8,2° / 16,2°). Résultat gardé par lieu (`ciel:norm:<lat,lon>`).
+Écart affiché = valeur prévue - normale, arrondi ; pastille de l'en-tête = moyenne des écarts mini
+et maxi du jour.
+
+**Explorer (v5)** : aujourd'hui et après, `api.open-meteo.com` avec `start_date` (mêmes modèles et
+même fusion que l'app) ; avant, `historical-forecast-api` avec les mêmes modèles si la date est après
+le 2022-10-01 et qu'elle renvoie au moins 30 h de température (AROME HD et ARPEGE y sont depuis
+octobre / novembre 2022, AROME 2,5 depuis 2024), sinon `archive-api` (ERA5, sans
+`precipitation_probability`, qui ferait échouer la requête). On demande J et J+1 pour la pluie de
+23h-0h. Défaut : le même jour il y a un an, au lieu affiché (qui suit le lieu principal tant qu'on
+n'en choisit pas un autre).
 
 Ce qui n'est **pas** dans l'app, et pourquoi :
 - **Vigilance orange / rouge** : pas dans les données ouvertes sans clé (le portail
@@ -74,9 +106,11 @@ Ce qui n'est **pas** dans l'app, et pourquoi :
 ```bash
 python -m http.server 8129 --directory PERSO/ciel
 ```
-(entrée `ciel` dans `.claude/launch.json` à la racine du dépôt). Un lieu se partage par l'URL :
+(entrée `ciel` dans `.claude/launch.json` à la racine du dépôt, ou `ciel-b` sur le port 8131 si une
+autre session tient déjà le 8129). Un lieu se partage par l'URL :
 `#l=lat,lon&n=Nom&cp=31000&d=Haute-Garonne`. Stockage local : `ciel:place`, `ciel:favs`,
-`ciel:theme`, `ciel:data:<lat,lon>` (les 6 derniers lieux, pour le hors ligne).
+`ciel:theme`, `ciel:data:<lat,lon>` (les 6 derniers lieux, pour le hors ligne), `ciel:norm:<lat,lon>`
+(station et normales retenues pour un lieu, v5).
 
 ## Versioning / déploiement
 
@@ -101,7 +135,27 @@ par nuit et par lieu ; « Tester » envoie la notification quoi qu'il arrive. Lo
 exécutant `sw.js` dans la page avec une fausse `showNotification` (Toulouse 3° : rien ; Chamonix 1°
 nuit claire : « Gelée blanche possible », une seule fois). Pas testé sur un vrai Android.
 
-**Statut : v1 en ligne depuis le 2026-11-02** sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
+**v3 (2026-11-02, `276e724`)** : corrige l'écran noir de la v2 au téléphone (cf. Pièges).
+
+**v4 (2026-11-02, `9fe81c8`, en ligne)** : `"id": "/ciel/app"` explicite dans le manifeste (avant :
+pas d'`id`, donc id = `start_url` = `https://kkjsf.github.io/ciel/`), pour tenter de débloquer la
+réinstallation sur Android. **Sans effet** : le blocage vient d'un bug de Chrome 154 à 156 qu'aucun
+manifeste ne contourne (cf. Pièges). **Ne plus changer cet id** : pour
+Chrome c'est l'identité de l'app, un autre id ferait une autre app (doublon, alerte gel à refaire).
+
+**v5 (2026-11-02, non publiée au moment d'écrire)** : demande de Simon après la v4. Écart aux
+normales Météo-France (liste 15 jours, courbe en pointillés, pastille de l'en-tête, détail du jour,
+tuile), ressenti / humidité / UV heure par heure et dans le détail du jour, carte « En ce moment »
+illustrée, onglet **Explorer** (6 onglets : libellés en 10,5 px, pastille d'icône plus étroite), carte
+Sources avec la station et un lien vers sa fiche PDF. Testée en local (téléphone sombre, bureau
+clair 1280 px), aucune erreur console.
+
+**Icône (v5)** : quatre idées présentées dans `icon-proposals.html` (non commité) ; **choix de Simon :
+A « 51 scénarios »**, un soleil dont les 51 rayons ont des longueurs différentes, comme le désaccord
+des scénarios ECMWF (l'indice de confiance en symbole). Écartées : B « Horizon », C « ciel » écrit,
+D « Jour et nuit ».
+
+**Statut : v4 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
 branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
 Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
 ceux de Harmonic Atlas et Chess Analyst (non touchés). Pas encore vérifié en ligne avec des données
@@ -111,10 +165,48 @@ Le dépôt est **public** : ne pas y écrire de lieu personnel (l'exemple de slu
 L'Isle-Jourdain avant le premier commit). Pas de CLI `gh` sur la machine : le dépôt a été créé et
 Pages activé par l'interface web (Chrome connecté au compte kkjsf) ; le push passe par SSH.
 
-Icônes : `icons/icon.svg` est la source ; les PNG (192, 512, maskable 512 avec contenu réduit à
-80 %) sont rendus par Chrome headless puis redimensionnés avec PIL.
+Icônes : `python tools/build_icons.py` (depuis `ciel/`) calcule les 51 rayons, écrit `icons/icon.svg`
+(source et favicon) et rend les PNG 192, 512 et maskable 512 (fond bord à bord, dessin réduit à
+80 % pour la zone sure d'Android) avec Chrome headless en 1024 px, réduits par PIL (lancer `python`
+sans `-I` : PIL est dans le site-packages de l'utilisateur).
 
 ## Pièges rencontrés
+
+- **Fiches climatologiques Météo-France sans CORS** (`meteofrance.s3.sbg.io.cloud.ovh.net`, 403 au
+  preflight) : impossible de les lire depuis la page, d'où le précalcul dans `normales/`. Certaines
+  stations n'ont des normales que sur une partie de la période (ex. 1991-2010) : le bloc le dit sur
+  sa propre ligne « Statistiques établies sur la période ... », le script la lit bloc par bloc.
+- **Port 8129 déjà pris par une autre session** : la prévisualisation de Claude Code ne peut pas
+  partager un serveur d'une autre conversation. Entrée `ciel-b` (port 8131, `autoPort: false`) dans
+  `.claude/launch.json` ; l'entrée `ciel` code le port 8129 en dur dans ses arguments, donc un port
+  réattribué automatiquement ne répond pas.
+
+- **Android : réinstallation refusée (2026-11-02). Cause très probable : bug de Chrome 154 à 156,
+  corrigé en 157.** Après désinstallation, Chrome Android répond « Déjà installé » puis « Application
+  introuvable » ; l'app n'est plus ni dans la liste des applis ni dans `chrome://webapks` (aucune
+  WebAPK fantôme). Redémarrage et nouvel `id` de manifeste (v4) sans effet.
+  Cause : régression de Chrome Android 154 (commit `bee74a32d432`, bug Chromium 568841400) : la
+  feuille d'installation regarde si **une web app quelconque de la même origine** est installée,
+  sans tenir compte de l'`id` ni de la portée. Or `kkjsf.github.io` porte aussi Harmonic Atlas et
+  Chess Analyst : si l'une des deux est installée sur le téléphone, Ciel est déclarée « déjà
+  installée » et « Ouvrir » ne trouve rien. Mêmes messages chez un autre développeur avec trois apps
+  sur `joeuk89.github.io` (github.com/joeuk89/london-lions/issues/19, source de ces détails ; le bug
+  Chromium n'est pas lisible sans compte). Corrigé dans **Chrome 157** (`157.0.8103.13`, stable
+  annoncé pour le 2026-11-03), pas reporté en 155 ni 156. **Rien dans le manifeste ne contourne ce
+  bug** : l'id de la v4 était inutile (inoffensif), changer de dossier (`/ciel-meteo/`) aussi.
+  Contournements :
+  1. Mettre Chrome à jour en **157** (Play Store ; version dans Paramètres > À propos de Chrome).
+  2. Ou installer depuis **Chrome Beta**, déjà au-delà de la 157 (l'app s'ouvre alors dans Beta).
+  3. Ou désinstaller un moment les autres apps de `kkjsf.github.io`, installer Ciel, puis attendre
+     la 157 pour les réinstaller (elles seraient bloquées à leur tour).
+  4. À long terme, une origine par app (sous-domaine perso par dépôt) éviterait ce piège et le
+     partage du stockage entre les trois apps.
+  **Ne pas effacer les données du site `kkjsf.github.io`** pour ce bug : ça n'y change rien et ça
+  efface aussi Harmonic Atlas et Chess Analyst (qui n'a aucun export).
+  Constaté le 2026-11-02 : téléphone en Chrome 156, la 157 pas encore proposée par le Play Store
+  (déploiement progressif sur plusieurs jours). À confirmer : quelle app de `kkjsf.github.io` y est
+  installée.
+  Non expliqué : la première installation de Ciel, le même jour, a réussi.
 
 - **v2 = écran noir au téléphone, corrigé en v3 (`276e724`)** : la règle `[data-view] { display: none }`
   visait aussi `<body>`, qui porte l'onglet courant dans `data-view` : toute la page était masquée sous
@@ -178,8 +270,8 @@ captures restent figés. Vérifier par le DOM, ou avec le panneau visible.
 
 ## Idées pour la suite
 
-- Vérifier en ligne avec des données réelles, puis installer sur le téléphone (Chrome : menu >
-  Installer l'application ; iPhone : Partager > Sur l'écran d'accueil).
+- Réinstaller sur le téléphone une fois Chrome en 157 (cf. Pièges), puis tester l'alerte gel sur un
+  vrai Android.
 - Le 2/11 à 15h, le dernier run AROME HD servi par Open-Meteo était encore celui de 7h00 (06 UTC,
   reçu à 12h03) alors qu'AROME tourne toutes les 3 h ; cf. leur issue #2274 sur les retards
   d'AROME HD. La carte Sources le montre ; à surveiller.
