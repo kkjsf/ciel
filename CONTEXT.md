@@ -143,7 +143,7 @@ réinstallation sur Android. **Sans effet** : le blocage vient d'un bug de Chrom
 manifeste ne contourne (cf. Pièges). **Ne plus changer cet id** : pour
 Chrome c'est l'identité de l'app, un autre id ferait une autre app (doublon, alerte gel à refaire).
 
-**v5 (2026-11-02, non publiée au moment d'écrire)** : demande de Simon après la v4. Écart aux
+**v5 (2026-11-02, `ff37d5f`, en ligne)** : demande de Simon après la v4. Écart aux
 normales Météo-France (liste 15 jours, courbe en pointillés, pastille de l'en-tête, détail du jour,
 tuile), ressenti / humidité / UV heure par heure et dans le détail du jour, carte « En ce moment »
 illustrée, onglet **Explorer** (6 onglets : libellés en 10,5 px, pastille d'icône plus étroite), carte
@@ -155,7 +155,7 @@ A « 51 scénarios »**, un soleil dont les 51 rayons ont des longueurs différe
 des scénarios ECMWF (l'indice de confiance en symbole). Écartées : B « Horizon », C « ciel » écrit,
 D « Jour et nuit ».
 
-**Statut : v4 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
+**Statut : v5 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
 branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
 Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
 ceux de Harmonic Atlas et Chess Analyst (non touchés). Pas encore vérifié en ligne avec des données
