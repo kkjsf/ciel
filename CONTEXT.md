@@ -86,8 +86,15 @@ livraison. Page en réseau d'abord (les mises à jour arrivent tout de suite), i
 cache d'abord ; le worker **ne supprime que les caches `ciel-`** (l'origine `kkjsf.github.io` est
 partagée avec Harmonic Atlas et Chess Analyst, cf. le bug corrigé en v297 de Chess Analyst).
 
-**Statut : v1 en local, pas encore de dépôt git ni de mise en ligne.** Cible naturelle : GitHub
-Pages `kkjsf/ciel` (comme les autres PWAs), à faire sur demande de Simon.
+**Statut : v1 en ligne depuis le 2026-11-02** sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
+branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
+Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
+ceux de Harmonic Atlas et Chess Analyst (non touchés). Pas encore vérifié en ligne avec des données
+réelles : Open-Meteo répondait 503 au moment de la mise en ligne.
+
+Le dépôt est **public** : ne pas y écrire de lieu personnel (l'exemple de slug a été changé pour
+L'Isle-Jourdain avant le premier commit). Pas de CLI `gh` sur la machine : le dépôt a été créé et
+Pages activé par l'interface web (Chrome connecté au compte kkjsf) ; le push passe par SSH.
 
 Icônes : `icons/icon.svg` est la source ; les PNG (192, 512, maskable 512 avec contenu réduit à
 80 %) sont rendus par Chrome headless puis redimensionnés avec PIL.
@@ -95,8 +102,9 @@ Icônes : `icons/icon.svg` est la source ; les PNG (192, 512, maskable 512 avec 
 ## Pièges rencontrés
 
 - **Open-Meteo peut répondre 503 « The service is overloaded »** sur toute l'API principale
-  pendant de longues minutes (vu le 2026-11-02 à partir de ~15h10 ; l'ensemble et la qualité de
-  l'air répondaient, eux). L'app retente 3 fois (1,5 s puis 3 s), garde l'affichage du cache du lieu
+  pendant de longues minutes (vu le 2026-11-02 de ~15h10 à au moins 15h45, `api` et `archive` en
+  503 ; l'ensemble et la qualité de l'air répondaient ; aucun incident signalé sur leur GitHub,
+  donc impossible de dire si c'était général ou propre à notre adresse IP). L'app retente 3 fois (1,5 s puis 3 s), garde l'affichage du cache du lieu
   avec un bandeau « prévisions de 15h09 affichées », et retente toute seule 2 min plus tard.
 - **Jamais les données d'un autre lieu** : un lieu sans cache vide l'écran (`clearView`) au lieu
   de laisser les prévisions du lieu précédent sous le nouveau nom (bug trouvé en test, corrigé).
@@ -119,7 +127,11 @@ Icônes : `icons/icon.svg` est la source ; les PNG (192, 512, maskable 512 avec 
 
 ## Idées pour la suite
 
-- Mise en ligne (GitHub Pages) puis installation sur le téléphone.
+- Vérifier en ligne avec des données réelles, puis installer sur le téléphone (Chrome : menu >
+  Installer l'application ; iPhone : Partager > Sur l'écran d'accueil).
+- Le 2/11 à 15h, le dernier run AROME HD servi par Open-Meteo était encore celui de 7h00 (06 UTC,
+  reçu à 12h03) alors qu'AROME tourne toutes les 3 h ; cf. leur issue #2274 sur les retards
+  d'AROME HD. La carte Sources le montre ; à surveiller.
 - Vigilance officielle via portail-api + proxy (Cloudflare Worker) si Simon crée un compte.
 - Carte radar de pluie (tuiles RainViewer ou Météo-France), pluie dans l'heure plus fine.
 - Repli si Open-Meteo est en panne longtemps (api.met.no, mais ce n'est plus du Météo-France).
