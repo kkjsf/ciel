@@ -116,6 +116,12 @@ Icônes : `icons/icon.svg` est la source ; les PNG (192, 512, maskable 512 avec 
 
 ## Pièges rencontrés
 
+- **v2 = écran noir au téléphone, corrigé en v3 (`276e724`)** : la règle `[data-view] { display: none }`
+  visait aussi `<body>`, qui porte l'onglet courant dans `data-view` : toute la page était masquée sous
+  920 px. Il faut `body [data-view]`. Le test de la v2 lisait le `display` calculé de chaque section
+  (qui reste `block` sous un parent masqué) : vérifier plutôt `elementFromPoint` ou le `display` du body.
+  GitHub Pages garde la page 10 min en cache (`max-age=600`) : une correction peut mettre ce temps à arriver.
+
 - **Open-Meteo peut répondre 503 « The service is overloaded »** sur toute l'API principale
   pendant de longues minutes (vu le 2026-11-02 de ~15h10 à au moins 15h45, `api` et `archive` en
   503 ; l'ensemble et la qualité de l'air répondaient ; aucun incident signalé sur leur GitHub,
