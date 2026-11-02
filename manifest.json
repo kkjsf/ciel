@@ -3,6 +3,7 @@
   "short_name": "Ciel",
   "description": "Heure par heure, 15 jours avec indice de confiance, gel, soleil et lune, à partir des modèles Météo-France.",
   "lang": "fr",
+  "id": "/ciel/app",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
