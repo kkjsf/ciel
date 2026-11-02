@@ -155,6 +155,12 @@ A « 51 scénarios »**, un soleil dont les 51 rayons ont des longueurs différe
 des scénarios ECMWF (l'indice de confiance en symbole). Écartées : B « Horizon », C « ciel » écrit,
 D « Jour et nuit ».
 
+**v6 (2026-11-02, locale)** : retour de Simon, au téléphone les libellés « pluie / vent / ressenti /
+humidité » de l'heure par heure débordaient sur le graphique et rendaient mal. La colonne fixe de
+gauche affiche désormais les **pictos des tuiles** (parapluie, vent, thermomètre, goutte, soleil, en
+couleur) au lieu de mots, et les trois lignes du bas sont plus espacées (ressenti, humidité, UV).
+Vérifié en 375 px, y compris avec le texte du graphique agrandi de 30 %.
+
 **Statut : v5 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
 branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
 Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
@@ -171,6 +177,10 @@ Icônes : `python tools/build_icons.py` (depuis `ciel/`) calcule les 51 rayons, 
 sans `-I` : PIL est dans le site-packages de l'utilisateur).
 
 ## Pièges rencontrés
+
+- **Pas de texte dans une colonne SVG de largeur fixe** : au téléphone, les mots débordent ou se
+  chevauchent dès que la police est plus large ou agrandie (v5 -> v6). Des pictos de taille fixe ne
+  bougent pas.
 
 - **Fiches climatologiques Météo-France sans CORS** (`meteofrance.s3.sbg.io.cloud.ovh.net`, 403 au
   preflight) : impossible de les lire depuis la page, d'où le précalcul dans `normales/`. Certaines

@@ -312,9 +312,8 @@ a { color: var(--accent); }
 .norm-pill i { width: 9px; height: 9px; border-radius: 50%; background: #fff; }
 .norm-pill.hot i { background: #ffb366; } .norm-pill.cold i { background: #9fd0ff; }
 .hwrap { display: flex; margin-right: -16px; }
-.hleg { flex: none; display: block; }
-.hleg text { fill: var(--faint); font-size: 10px; }
-.hwrap .hscroll { flex: 1; min-width: 0; margin: 0; padding: 0 16px 4px 0; }
+.hleg { flex: none; display: block; margin-left: -6px; }
+.hwrap .hscroll { flex: 1; min-width: 0; margin: 0; padding: 0 16px 4px 2px; }
 .hsvg .fl { font-size: 11.5px; font-weight: 600; }
 .hsvg .hu { fill: var(--muted); font-size: 11px; }
 .hsvg .uv { fill: #fff; font-size: 10.5px; font-weight: 700; }
@@ -387,7 +386,7 @@ a { color: var(--accent); }
   <div class="grid">
     <div class="col">
       <section class="card" data-view="today"><h2>Heure par heure <span class="h2-note" id="hourlyNote"></span></h2><div id="hourly"></div>
-        <p class="note">Pluie en mm sur l'heure qui suit, vent moyen et rafales en km/h (flèche = sens où va le vent). Ressenti : la température que l'on perçoit avec le vent et l'humidité. UV : indice Copernicus, les 4 premiers jours.</p></section>
+        <p class="note">Lignes du bas, de haut en bas : pluie en mm sur l'heure qui suit ; vent moyen et rafales en km/h (flèche = sens où va le vent) ; ressenti, la température que l'on perçoit avec le vent et l'humidité ; humidité ; UV (indice Copernicus, les 4 premiers jours).</p></section>
       <section class="card" data-view="today"><h2>Meilleur créneau pour sortir</h2><div id="slot"></div></section>
       <section class="card" data-view="days"><h2><span>15 jours</span>
           <span class="seg" id="daysSeg"><button type="button" data-mode="liste" aria-pressed="true">Liste</button><button type="button" data-mode="courbe" aria-pressed="false">Courbe</button></span></h2>
@@ -427,8 +426,8 @@ a { color: var(--accent); }
 
 <script>
 'use strict';
-const APP_VERSION = '5';
-const APP_BUILT = '02/11/2026 21h00';
+const APP_VERSION = '6';
+const APP_BUILT = '02/11/2026 22h00';
 const TZ = 'Europe/Paris';
 const HOUR = 3600e3, DAY = 864e5;
 const DEFAULT_PLACE = { name: 'Toulouse', lat: 43.6045, lon: 1.4442, cp: '31000', dep: 'Haute-Garonne' };
@@ -989,7 +988,7 @@ function hourlySvg(D, from, to, { step = 1, markNow = false, dayLabels = true } 
   // sans pluie ni proba dans la plage, la bande pluie est repliee
   const dy = cols.some(i => slotRain(i) >= 0.05 || showProb(i)) ? 0 : 44;
   const hasUv = cols.some(i => (H.uv[i] ?? 0) >= 0.5);
-  const n = cols.length, width = n * W, height = (hasUv ? 302 : 282) - dy, uid = ++svgUid;
+  const n = cols.length, width = n * W, height = (hasUv ? 318 : 296) - dy, uid = ++svgUid;
   const temps = cols.map(i => H.temperature_2m[i]);
   const lo = Math.min(...temps), hi = Math.max(...temps), span = Math.max(hi - lo, 5);
   const yT = v => 116 - (v - lo) / span * 32;
@@ -1036,13 +1035,15 @@ function hourlySvg(D, from, to, { step = 1, markNow = false, dayLabels = true } 
     if (ws != null) s += `<text class="wl" x="${cx}" y="${225 - dy}" text-anchor="middle">${Math.round(ws)}</text>`;
     if (gu != null && gu >= 30) s += `<text class="gl${gu >= 50 ? ' hi' : ''}" x="${cx}" y="${236 - dy}" text-anchor="middle">r ${Math.round(gu)}</text>`;
     const fl = H.apparent_temperature[i], hu = H.relative_humidity_2m[i], uv = H.uv[i];
-    if (fl != null) s += `<text class="fl" x="${cx}" y="${259 - dy}" text-anchor="middle" style="fill:${tc(fl)}">${deg(fl)}</text>`;
-    if (hu != null) s += `<text class="hu" x="${cx}" y="${277 - dy}" text-anchor="middle">${Math.round(hu)}%</text>`;
-    if (uv != null && uv >= 0.5) s += `<rect x="${cx - 11}" y="${283 - dy}" width="22" height="15" rx="7.5" fill="${UV(uv)[1]}"/><text class="uv" x="${cx}" y="${294.5 - dy}" text-anchor="middle">${Math.round(uv)}</text>`;
+    if (fl != null) s += `<text class="fl" x="${cx}" y="${264 - dy}" text-anchor="middle" style="fill:${tc(fl)}">${deg(fl)}</text>`;
+    if (hu != null) s += `<text class="hu" x="${cx}" y="${287 - dy}" text-anchor="middle">${Math.round(hu)}%</text>`;
+    if (uv != null && uv >= 0.5) s += `<rect x="${cx - 11}" y="${296 - dy}" width="22" height="15" rx="7.5" fill="${UV(uv)[1]}"/><text class="uv" x="${cx}" y="${307.5 - dy}" text-anchor="middle">${Math.round(uv)}</text>`;
   });
   s += `<line x1="0" x2="${width}" y1="${243.5 - dy}" y2="${243.5 - dy}" stroke="var(--line)" stroke-dasharray="2 3"/>`;
-  const rows = [[dy ? null : 168, 'pluie'], [225 - dy, 'vent'], [259 - dy, 'ressenti'], [277 - dy, 'humid.'], [hasUv ? 294.5 - dy : null, 'UV']];
-  const leg = `<svg class="hleg" width="40" height="${height}" aria-hidden="true">${rows.filter(r => r[0] != null).map(([y, l]) => `<text x="38" y="${y}" text-anchor="end">${l}</text>`).join('')}</svg>`;
+  // Libelles des lignes : les pictos des tuiles (pas de texte, qui deborderait avec un grand reglage de police)
+  const rows = [[dy ? null : 158, 'rain'], [214 - dy, 'wind'], [260 - dy, 'feel'], [283 - dy, 'hum'], [hasUv ? 303.5 - dy : null, 'uv']];
+  const leg = `<svg class="hleg" width="22" height="${height}" aria-hidden="true">${rows.filter(r => r[0] != null).map(([y, k]) =>
+    `<svg x="2" y="${y - 8}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${TCOL[k]}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${TI[k]}</svg>`).join('')}</svg>`;
   return `<div class="hwrap">${leg}<div class="hscroll">${s}</svg></div></div>`;
 }
 function renderHourly(D) {
