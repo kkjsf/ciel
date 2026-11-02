@@ -1,0 +1,125 @@
+# Ciel - PWA météo sourcée Météo-France
+
+Créée le 2026-11-02. Besoin de Simon : une appli météo **sans pub, jolie, rapide, et dont on ne
+doute pas des infos** : heure par heure, 15 jours, risque de gel, lever / coucher du soleil.
+
+## Ce que c'est
+
+Une PWA **une seule page** (`index.html`, ~70 Ko, vanilla JS, zéro build) + `sw.js` +
+`manifest.json` + `icons/`. Interface en français, thème clair / sombre (auto, ou forcé en pied de
+page). Pensée téléphone d'abord, deux colonnes au-delà de 920 px.
+
+Écran, de haut en bas :
+- **En-tête** au dégradé de ciel (change selon le temps, la nuit, l'aube et le crépuscule) : lieu,
+  favoris en puces, température actuelle (AROME au quart d'heure, interpolée à la minute),
+  ressenti, mini / maxi du jour, une phrase de synthèse (pluie à venir, rafales, gel cette nuit,
+  demain plus doux / plus frais), et **la pluie des 2 prochaines heures** au quart d'heure (cachée
+  s'il ne pleut pas dans les 24 h).
+- **Heure par heure** sur 48 h (SVG) : pictogramme, courbe de température colorée, pluie en mm,
+  vent (flèche = sens où il va) et rafales, nuits grisées, séparateurs de jour.
+- **15 jours** : mini / maxi en barre colorée, **bande grise = plage des 51 scénarios ECMWF**
+  (p10 des mini à p90 des maxi), pluie en mm + **proba de pluie ≥ 1 mm** (part des scénarios),
+  **indice de confiance sur 5** (points sous le jour). Un tap ouvre le détail du jour (graphique
+  horaire, vent, scénarios, modèle et run). Au-delà de J+4 le détail passe au pas de 3 h puis 6 h,
+  parce que l'ECMWF ne sort pas de données horaires à ces échéances (on n'affiche pas une fausse
+  précision interpolée).
+- **Gel** : 14 nuits, minimale sous abri, niveau (gel fort ≤ −5, gel ≤ 0, gelée blanche possible
+  si ≤ 3° par nuit claire et calme, gel possible si ≥ 25 % des scénarios gèlent, risque faible) et
+  % de scénarios ECMWF à ≤ 0°. Phrase de tête : prochaine nuit à risque, sinon la plus froide.
+- **Soleil et lune** : arc du soleil avec position actuelle, lever / coucher, durée du jour et écart
+  avec la veille, midi solaire, aube / crépuscule civils, heure dorée, compte à rebours du solstice,
+  phase de lune dessinée, % éclairé, prochaines pleine et nouvelle lunes.
+- **En ce moment** : vent, humidité + point de rosée, pression + tendance 3 h, écart avec hier à la
+  même heure, UV, qualité de l'air (indice européen), pollens, pluie sur 24 h.
+- **Sources et fiabilité** : chaque modèle, sa couverture réelle, l'heure de son run et de sa
+  réception ; liens « Comparer sur meteofrance.com » (page de la commune) et « Vigilance <dépt> ».
+
+## D'où viennent les données (le point qui compte)
+
+Tout passe par **Open-Meteo** (gratuit, sans clé, CORS ouvert), qui redistribue les données
+ouvertes de Météo-France (Licence Ouverte Etalab) et de l'ECMWF (CC BY 4.0).
+
+| Horizon | Modèle | Id Open-Meteo |
+|---|---|---|
+| 0 à ~J+2 | AROME 1,5 km (Météo-France), + pluie et température **natives** au quart d'heure | `meteofrance_arome_france_hd` |
+| idem, pictogramme et nébulosité | AROME 2,5 km (le HD ne fournit ni `weather_code` ni `cloud_cover`) | `meteofrance_arome_france0025` |
+| ~J+2 à ~J+4,5 | ARPEGE Europe 11 km (Météo-France) | `meteofrance_arpege_europe` |
+| J+4,5 à J+15 | ECMWF IFS 9 km (Météo-France l'utilise aussi au-delà de 4 jours) | `ecmwf_ifs` |
+| confiance, probas | ECMWF ENS 51 membres, agrégats journaliers par membre | `ecmwf_ifs025` (ensemble-api) |
+| UV, air, pollens | Copernicus CAMS | air-quality-api |
+
+**Fusion** : pour chaque heure et chaque variable, la première valeur non nulle dans l'ordre
+AROME HD > AROME 2,5 > ARPEGE > ECMWF. La source d'une heure = le modèle qui a fourni sa
+température. Les heures de run viennent de `https://api.open-meteo.com/data/<modele>/static/meta.json`.
+
+Requêtes par chargement : 1 forecast (4 modèles, ~110 Ko), 1 ensemble (~21 Ko), 1 qualité de
+l'air, 4 meta.json. Recherche de commune : **API Adresse** (`api-adresse.data.gouv.fr`,
+`type=municipality`) ; commune d'une position GPS : `geo.api.gouv.fr/communes?lat&lon`.
+Soleil et lune calculés sur l'appareil (aucun appel).
+
+Ce qui n'est **pas** dans l'app, et pourquoi :
+- **Vigilance orange / rouge** : pas dans les données ouvertes sans clé (le portail
+  `portail-api.meteofrance.fr` demande un compte + clé). D'où le lien vers la carte officielle du
+  département. Piste v2 : un compte portail-api et un petit proxy (la clé ne peut pas vivre dans
+  une page publique).
+- **L'API privée de l'app Météo-France** (`webservice.meteofrance.com` avec le jeton embarqué dans
+  leur app, celle qu'utilise la lib Python `meteofrance-api`) : écartée volontairement, ce n'est
+  pas une API publique (et l'appel a été bloqué par le garde-fou de Claude Code).
+- **Observations de stations** : idem, portail-api avec clé.
+- La prévision officielle de meteofrance.com est retouchée par des prévisionnistes : petits écarts
+  possibles avec l'app, c'est écrit dans la carte Sources.
+
+## Lancer / tester
+
+```bash
+python -m http.server 8129 --directory PERSO/ciel
+```
+(entrée `ciel` dans `.claude/launch.json` à la racine du dépôt). Un lieu se partage par l'URL :
+`#l=lat,lon&n=Nom&cp=31000&d=Haute-Garonne`. Stockage local : `ciel:place`, `ciel:favs`,
+`ciel:theme`, `ciel:data:<lat,lon>` (les 6 derniers lieux, pour le hors ligne).
+
+## Versioning / déploiement
+
+`APP_VERSION` + `APP_BUILT` en tête du script d'`index.html`. Le service worker est enregistré en
+`sw.js?v=APP_VERSION` et en dérive son nom de cache (`ciel-v<N>`) : bumper `APP_VERSION` à chaque
+livraison. Page en réseau d'abord (les mises à jour arrivent tout de suite), icônes et manifeste en
+cache d'abord ; le worker **ne supprime que les caches `ciel-`** (l'origine `kkjsf.github.io` est
+partagée avec Harmonic Atlas et Chess Analyst, cf. le bug corrigé en v297 de Chess Analyst).
+
+**Statut : v1 en local, pas encore de dépôt git ni de mise en ligne.** Cible naturelle : GitHub
+Pages `kkjsf/ciel` (comme les autres PWAs), à faire sur demande de Simon.
+
+Icônes : `icons/icon.svg` est la source ; les PNG (192, 512, maskable 512 avec contenu réduit à
+80 %) sont rendus par Chrome headless puis redimensionnés avec PIL.
+
+## Pièges rencontrés
+
+- **Open-Meteo peut répondre 503 « The service is overloaded »** sur toute l'API principale
+  pendant de longues minutes (vu le 2026-11-02 à partir de ~15h10 ; l'ensemble et la qualité de
+  l'air répondaient, eux). L'app retente 3 fois (1,5 s puis 3 s), garde l'affichage du cache du lieu
+  avec un bandeau « prévisions de 15h09 affichées », et retente toute seule 2 min plus tard.
+- **Jamais les données d'un autre lieu** : un lieu sans cache vide l'écran (`clearView`) au lieu
+  de laisser les prévisions du lieu précédent sous le nouveau nom (bug trouvé en test, corrigé).
+- **Pluie horaire = cumul de l'heure ÉCOULÉE** chez Open-Meteo (valeur à 15h = 14h-15h). L'app
+  affiche des créneaux : la colonne « 14h » montre la pluie 14h-15h (`precipitation[i + 1]`), et
+  le pictogramme du même créneau. Même logique au quart d'heure.
+- **Les formules SunCalc dérivent de ~2 min** sur le coucher (17h46 au lieu de 17h44 à Toulouse le
+  2/11). Remplacées par le calculateur NOAA, identique à la seconde à une référence Python et à
+  Open-Meteo. Lune : longitude de Meeus avec les principaux termes de perturbation (nouvelle lune
+  du 9/11/2026 trouvée à 11 min près).
+- **`geo.api.gouv.fr` en recherche par nom bute sur les apostrophes** (une commune en « d'... » ne
+  remonte pas si on tape « d » sans apostrophe) : la recherche passe par l'API Adresse, qui accepte aussi « st »
+  et les codes postaux. En revanche son `reverse` en `type=municipality` renvoie vide : on garde
+  `geo.api.gouv.fr` pour la géolocalisation.
+- URL meteofrance.com d'une commune : `/previsions-meteo-france/<slug>/<code postal>`, slug sans
+  accents, apostrophe remplacée par un tiret (`l-isle-jourdain/32600`). Même slug pour
+  `vigilance.meteofrance.fr/fr/<departement>`.
+- L'ECMWF est horaire jusqu'à 90 h, tri-horaire jusqu'à 144 h, puis 6-horaire : Open-Meteo
+  interpole, l'app ré-échantillonne le détail du jour en conséquence (`stepFor`).
+
+## Idées pour la suite
+
+- Mise en ligne (GitHub Pages) puis installation sur le téléphone.
+- Vigilance officielle via portail-api + proxy (Cloudflare Worker) si Simon crée un compte.
+- Carte radar de pluie (tuiles RainViewer ou Météo-France), pluie dans l'heure plus fine.
+- Repli si Open-Meteo est en panne longtemps (api.met.no, mais ce n'est plus du Météo-France).
