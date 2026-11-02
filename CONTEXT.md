@@ -86,6 +86,21 @@ livraison. Page en réseau d'abord (les mises à jour arrivent tout de suite), i
 cache d'abord ; le worker **ne supprime que les caches `ciel-`** (l'origine `kkjsf.github.io` est
 partagée avec Harmonic Atlas et Chess Analyst, cf. le bug corrigé en v297 de Chess Analyst).
 
+**v2 (2026-11-02, choix de Simon sur la maquette)** : au téléphone, **barre de navigation en bas**
+(variante A : Aujourd'hui, 15 jours, Gel, Soleil, Fiabilité ; un écran par onglet, mini-barre du lieu
+en haut des autres écrans, `show(k)` + règles CSS `[data-view]` sous 920 px) ; au bureau, deux colonnes
+sans barre. Nouvelles cartes portées du prototype : **Meilleur créneau pour sortir**, **15 jours en
+courbe** (bascule Liste / Courbe), **Les modèles sont-ils d'accord ?** **Balayage horizontal sur
+l'en-tête** entre les lieux enregistrés (points cliquables sous l'en-tête). **Thème sombre par
+défaut** (cycle sombre > clair > auto). **Alerte gel** : bouton dans la carte Gel ; `periodicSync`
+(tag `gel`, intervalle mini 6 h, **Chrome Android + app installée seulement**) ; le worker lit le lieu
+surveillé dans le cache `ciel-reglages` (pas de localStorage côté worker, et ce cache n'est jamais
+purgé), récupère `meteofrance_seamless` sur 3 jours, regarde la nuit qui finit le matin de
+(maintenant + 18 h), mêmes seuils que la carte Gel sans la proba ensemble, notifie une seule fois
+par nuit et par lieu ; « Tester » envoie la notification quoi qu'il arrive. Logique vérifiée en
+exécutant `sw.js` dans la page avec une fausse `showNotification` (Toulouse 3° : rien ; Chamonix 1°
+nuit claire : « Gelée blanche possible », une seule fois). Pas testé sur un vrai Android.
+
 **Statut : v1 en ligne depuis le 2026-11-02** sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
 branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
 Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
@@ -124,6 +139,36 @@ Icônes : `icons/icon.svg` est la source ; les PNG (192, 512, maskable 512 avec 
   `vigilance.meteofrance.fr/fr/<departement>`.
 - L'ECMWF est horaire jusqu'à 90 h, tri-horaire jusqu'à 144 h, puis 6-horaire : Open-Meteo
   interpole, l'app ré-échantillonne le détail du jour en conséquence (`stepFor`).
+
+## Maquette v2 (2026-11-02, NON commitée, non publiée)
+
+Demande de Simon : « une maquette plus sympa des modifs possibles, notamment des accès plus rapides
+aux sections avec des menus en bas ». Trois fichiers, hors dépôt :
+- `mockup.html` : la page de présentation (s'ouvre via le serveur local, `http://localhost:8129/mockup.html`) :
+  les deux variantes côte à côte dans des cadres de téléphone, pour / contre, les trois nouveautés,
+  quatre autres idées illustrées (glisser entre les lieux, alerte gel Android, radar, bilan d'eau du
+  jardin) et une recommandation.
+- `mockup-app.html` : **un vrai prototype**, généré depuis `index.html` par
+  `tools/build_mockup_app.py` (remplacements vérifiés, à relancer si l'app change). `?nav=onglets`
+  (variante A : un écran par bouton + mini-barre du lieu) ou `?nav=ancres` (variante B : une page,
+  la barre saute aux sections et suit la lecture). Nouveautés : **Meilleur créneau pour sortir**
+  (course / vélo / balade, chaque heure de jour notée sur pluie, température idéale, vent, rafales,
+  meilleure fenêtre notée surtout par sa pire heure, frise de 40 h), **15 jours en courbe** (maxi /
+  mini + plages p10-p90 des 51 scénarios + proba de pluie, zone « tendance » après J+10),
+  **Les modèles sont-ils d'accord ?** (AROME / ARPEGE / ECMWF superposés sur ~4 jours, écart moyen
+  et maximal, pluie par jour et par modèle, désaccords surlignés).
+- `mockup-snapshot.json` : les prévisions de Toulouse figées le 2/11/2026 à 15h09 (le prototype
+  ne fait aucun appel réseau ; récupérées du cache du navigateur pendant la panne d'Open-Meteo).
+
+Recommandation faite à Simon : variante A au téléphone, deux colonnes sans barre au bureau ; v2 =
+barre + créneau + courbe + modèles ; v3 = glisser entre les lieux + alerte gel Android ; radar
+seulement si une source d'images gratuite se confirme. **Choix de Simon : A + alerte gel + balayage
+entre les lieux, livrés en v2.** `tools/build_mockup_app.py` cible l'`index.html` v1 : relancé sur la
+v2, ses remplacements échouent (c'est voulu, la maquette est figée).
+
+Piège de test : avec le panneau navigateur de l'app masqué, `requestAnimationFrame` ne tourne plus,
+donc le défilement doux, l'`IntersectionObserver` (suivi de section de la variante B) et parfois les
+captures restent figés. Vérifier par le DOM, ou avec le panneau visible.
 
 ## Idées pour la suite
 

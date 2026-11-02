@@ -231,12 +231,86 @@ a { color: var(--accent); }
 .empty { color: var(--muted); font-size: 13px; padding: 8px 2px; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ---------- v2 : barre du bas et mini-barre au telephone, nouvelles cartes ---------- */
+.tabbar, .minibar { display: none; }
+@media (max-width: 919px) {
+  body { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
+  .tabbar {
+    display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    padding: 6px 6px calc(8px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--card) 86%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--line);
+  }
+  body:not([data-view="today"]) .minibar { display: block; }
+  [data-view] { display: none; }
+  body[data-view="today"] [data-view="today"], body[data-view="days"] [data-view="days"], body[data-view="frost"] [data-view="frost"],
+  body[data-view="sun"] [data-view="sun"], body[data-view="trust"] [data-view="trust"] { display: block; }
+}
+.tabbar button { border: 0; background: none; display: grid; justify-items: center; gap: 3px; padding: 4px 0 2px; font-size: 11px; color: var(--muted); cursor: pointer; }
+.tabbar svg { width: 26px; height: 26px; padding: 3px 12px; box-sizing: content-box; border-radius: 99px; transition: background .2s; }
+.tabbar button[aria-current="true"] { color: var(--accent); font-weight: 650; }
+.tabbar button[aria-current="true"] svg { background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.minibar {
+  --cl: #f3f6fa; --cl2: #c9d3de; --ol: transparent; --drop: #a8d4ff; --flake: #eaf3ff; --moon: #f3ecc8;
+  position: sticky; top: 0; z-index: 25; color: #fff; background: linear-gradient(165deg, var(--sky1, #1d64b5), var(--sky2, #4f97dc));
+  padding: calc(env(safe-area-inset-top) + 6px) 16px 6px; border-radius: 0 0 18px 18px; box-shadow: 0 4px 14px rgba(0, 0, 0, .12);
+}
+.minibar button { all: unset; display: flex; align-items: center; gap: 8px; width: 100%; cursor: pointer; }
+.minibar .mini-ico { width: 38px; height: 38px; }
+.minibar b { font-size: 21px; font-weight: 600; }
+.minibar span { font-weight: 650; }
+.minibar small { margin-left: auto; opacity: .85; font-size: 12.5px; }
+.hdots { display: flex; gap: 6px; justify-content: center; margin-top: 12px; }
+.hdots:empty { display: none; }
+.hdots button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .4); cursor: pointer; }
+.hdots button[aria-current="true"] { background: #fff; }
+.in-l { animation: inL .28s ease-out; }
+.in-r { animation: inR .28s ease-out; }
+@keyframes inL { from { transform: translateX(40px); opacity: .2; } }
+@keyframes inR { from { transform: translateX(-40px); opacity: .2; } }
+.seg { display: inline-flex; background: var(--chip); border-radius: 99px; padding: 2px; }
+.seg button { border: 0; background: none; font-size: 12px; padding: 4px 11px; border-radius: 99px; color: var(--muted); cursor: pointer; text-transform: none; letter-spacing: 0; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, .14); }
+.acts { display: flex; gap: 6px; margin-bottom: 12px; }
+.acts button { border: 1px solid var(--line); background: none; border-radius: 99px; padding: 5px 12px; font-size: 13px; cursor: pointer; color: var(--muted); }
+.acts button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.slot-best { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.slot-best b { font-size: 19px; }
+.slot-best span { font-size: 12px; font-weight: 650; padding: 2px 8px; border-radius: 99px; color: #0f3d22; }
+.slot-facts { color: var(--muted); font-size: 13.5px; margin: 2px 0 12px; }
+.tl-wrap { position: relative; }
+.tl { display: flex; gap: 1px; height: 24px; }
+.tl i { flex: 1; border-radius: 2px; background: var(--chip); }
+.tl i.n { background: color-mix(in srgb, var(--ink) 16%, transparent); }
+.tl i.w { background: repeating-linear-gradient(135deg, var(--rain) 0 2px, transparent 2px 5px); opacity: .55; }
+.tl-best { position: absolute; top: -4px; bottom: -4px; border: 2.5px solid var(--ink); border-radius: 6px; pointer-events: none; }
+.tl-lab { position: relative; height: 16px; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.tl-lab span { position: absolute; white-space: nowrap; }
+.mchart, .dchart { display: block; width: 100%; height: auto; max-width: 560px; margin: 0 auto; }
+.mchart text, .dchart text { fill: var(--muted); font-size: 10px; }
+.dchart .vmax { fill: var(--ink); font-weight: 650; }
+.mleg { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; margin: 8px 0 4px; }
+.mleg span { display: inline-flex; align-items: center; gap: 6px; }
+.mleg i { width: 16px; height: 3px; border-radius: 2px; display: inline-block; }
+.verdict { font-size: 15px; font-weight: 600; margin: 0 0 10px; }
+.rtab { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
+.rtab th, .rtab td { padding: 5px 4px; text-align: right; border-top: 1px solid var(--line); }
+.rtab th:first-child, .rtab td:first-child { text-align: left; }
+.rtab th { color: var(--muted); font-weight: 600; border-top: 0; }
+.rtab td.off { background: color-mix(in srgb, var(--warn) 16%, transparent); }
+.alert { display: flex; gap: 12px; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.alert div { flex: 1; font-size: 13px; color: var(--muted); }
+.alert b { display: block; color: var(--ink); font-size: 14.5px; }
+.alert button { flex: none; border: 0; border-radius: 99px; padding: 8px 14px; font-weight: 600; cursor: pointer; background: var(--accent); color: #fff; }
+.alert button.ghost { background: var(--chip); color: var(--ink); }
 </style>
 </head>
 <body>
 <svg id="sprite" width="0" height="0" style="position:absolute" aria-hidden="true"></svg>
+<div class="minibar" id="minibar"></div>
 <div class="wrap">
-  <header class="hero" id="hero">
+  <header class="hero" id="hero" data-view="today">
     <div class="hero-top">
       <button class="place" id="placeBtn" type="button" aria-label="Changer de lieu">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
@@ -252,24 +326,30 @@ a { color: var(--accent); }
     </div>
     <div class="favs" id="favs"></div>
     <div id="heroBody"><div class="skeleton">Chargement des prévisions...</div></div>
+    <div class="hdots" id="hdots"></div>
   </header>
   <div class="banner" id="banner" hidden></div>
   <div class="grid">
     <div class="col">
-      <section class="card"><h2>Heure par heure <span class="h2-note" id="hourlyNote"></span></h2><div class="hscroll" id="hourly"></div>
+      <section class="card" data-view="today"><h2>Heure par heure <span class="h2-note" id="hourlyNote"></span></h2><div class="hscroll" id="hourly"></div>
         <p class="note">Pluie en mm sur l'heure qui suit, vent moyen et rafales en km/h. Flèche = sens où va le vent.</p></section>
-      <section class="card"><h2>15 jours <span class="h2-note">touchez un jour pour le détail</span></h2><div id="days"></div>
-        <p class="note">Points sous le jour : indice de confiance sur 5, tiré de l'accord entre les 51 scénarios ECMWF. Barre grise : plage des scénarios (10 % les plus froids à 10 % les plus chauds).</p></section>
+      <section class="card" data-view="today"><h2>Meilleur créneau pour sortir</h2><div id="slot"></div></section>
+      <section class="card" data-view="days"><h2><span>15 jours</span>
+          <span class="seg" id="daysSeg"><button type="button" data-mode="liste" aria-pressed="true">Liste</button><button type="button" data-mode="courbe" aria-pressed="false">Courbe</button></span></h2>
+        <div id="days"></div><div id="daysChart" hidden></div>
+        <p class="note">Points sous le jour : indice de confiance sur 5, tiré de l'accord entre les 51 scénarios ECMWF. Barre ou zone grisée : plage des scénarios (10 % les plus froids à 10 % les plus chauds). Touchez un jour de la liste pour son détail.</p></section>
     </div>
     <div class="col">
-      <section class="card"><h2>Gel</h2><div id="frost"></div></section>
-      <section class="card"><h2>Soleil et lune</h2><div id="sun"></div></section>
-      <section class="card"><h2>En ce moment</h2><div id="details"></div></section>
-      <section class="card"><h2>Sources et fiabilité</h2><div id="sources"></div></section>
+      <section class="card" data-view="today"><h2>En ce moment</h2><div id="details"></div></section>
+      <section class="card" data-view="frost"><h2>Gel</h2><div id="frost"></div><div id="alert"></div></section>
+      <section class="card" data-view="sun"><h2>Soleil et lune</h2><div id="sun"></div></section>
+      <section class="card" data-view="trust"><h2>Les modèles sont-ils d'accord ?</h2><div id="models"></div></section>
+      <section class="card" data-view="trust"><h2>Sources et fiabilité</h2><div id="sources"></div></section>
     </div>
   </div>
   <footer class="foot" id="foot"></footer>
 </div>
+<nav class="tabbar" id="tabbar" aria-label="Sections"></nav>
 
 <dialog class="sheet" id="sheet" aria-label="Choisir un lieu">
   <div class="sheet-in">
@@ -291,8 +371,8 @@ a { color: var(--accent); }
 
 <script>
 'use strict';
-const APP_VERSION = '1';
-const APP_BUILT = '02/11/2026 15h30';
+const APP_VERSION = '2';
+const APP_BUILT = '02/11/2026 18h30';
 const TZ = 'Europe/Paris';
 const HOUR = 3600e3, DAY = 864e5;
 const DEFAULT_PLACE = { name: 'Toulouse', lat: 43.6045, lon: 1.4442, cp: '31000', dep: 'Haute-Garonne' };
@@ -1014,7 +1094,7 @@ const placeId = p => `${p.lat.toFixed(3)},${p.lon.toFixed(3)}`;
 function render() {
   if (!state.data) return;
   const D = build(state.data, state.place);
-  for (const fn of [renderHero, renderHourly, renderDays, renderFrost, renderSun, renderDetails, renderSources]) {
+  for (const fn of [renderHero, renderHourly, renderDays, renderFrost, renderSun, renderDetails, renderSources, renderMini, renderSlot, renderModels, renderDaysChart]) {
     try { fn(D); } catch (e) { console.error(fn.name, e); }
   }
   state.D = D;
@@ -1033,7 +1113,7 @@ function clearView() {
   state.data = null;
   document.title = `${state.place.name} - Ciel`;
   $('heroBody').innerHTML = '<div class="skeleton">Chargement des prévisions...</div>';
-  for (const id of ['hourly', 'days', 'frost', 'sun', 'details', 'sources', 'hourlyNote']) $(id).innerHTML = '';
+  for (const id of ['hourly', 'days', 'frost', 'sun', 'details', 'sources', 'hourlyNote', 'slot', 'models', 'daysChart']) $(id).innerHTML = '';
 }
 async function load(place) {
   const switching = !state.place || placeId(state.place) !== placeId(place);
@@ -1102,6 +1182,8 @@ function renderFavs() {
   const list = favs(), cur = state.place && placeId(state.place);
   $('favs').innerHTML = list.length > 1 || (list.length === 1 && placeId(list[0]) !== cur)
     ? list.map((f, i) => `<button type="button" data-fav="${i}" aria-current="${placeId(f) === cur}">${esc(f.name)}</button>`).join('') : '';
+  $('hdots').innerHTML = list.length > 1 ? list.map((f, i) => `<button type="button" data-dot="${i}" aria-label="${esc(f.name)}" aria-current="${placeId(f) === cur}"></button>`).join('') : '';
+  if ($('alert')) renderAlert();
   const on = state.place && isFav(state.place);
   $('favBtn').setAttribute('aria-pressed', on);
   $('favBtn').setAttribute('aria-label', on ? 'Retirer des favoris' : 'Ajouter aux favoris');
@@ -1188,17 +1270,254 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('hashchange', () => { const p = placeFromHash(); if (p && (!state.place || placeId(p) !== placeId(state.place))) load(p); });
 
 /* ---------- theme et pied de page ---------- */
-const THEMES = [['auto', 'Thème auto'], ['light', 'Thème clair'], ['dark', 'Thème sombre']];
+const THEMES = [['dark', 'Thème sombre'], ['light', 'Thème clair'], ['auto', 'Thème auto']];
 function applyTheme(t) { if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t; }
 function renderFoot() {
-  const t = store.get('theme', 'auto');
+  const t = store.get('theme', 'dark');
   $('foot').innerHTML = `Ciel v${APP_VERSION} · ${APP_BUILT}<button type="button" id="themeBtn">${THEMES.find(x => x[0] === t)[1]}</button>`;
   $('themeBtn').onclick = () => {
-    const next = THEMES[(THEMES.findIndex(x => x[0] === store.get('theme', 'auto')) + 1) % 3][0];
+    const next = THEMES[(THEMES.findIndex(x => x[0] === store.get('theme', 'dark')) + 1) % 3][0];
     store.set('theme', next); applyTheme(next); renderFoot(); render();
   };
 }
-applyTheme(store.get('theme', 'auto'));
+/* Meilleur creneau : chaque heure de jour notee sur 100 (pluie, ecart a la temperature ideale, vent, rafales),
+   puis la meilleure fenetre continue, notee surtout par sa pire heure */
+const ACTIVITIES = {
+  course: { label: 'Course', len: 2, ideal: [7, 16], wind: 25, gust: 45 },
+  velo: { label: 'Vélo', len: 3, ideal: [13, 22], wind: 15, gust: 35 },
+  balade: { label: 'Balade', len: 2, ideal: [12, 24], wind: 25, gust: 50 },
+};
+let activity = 'course';
+function hourScore(D, i, a) {
+  const H = D.H, t = H.temperature_2m[i];
+  if (t == null || D.isNight(H.t[i] + 30 * 60e3)) return { night: true };
+  const rain = H.precipitation[i + 1] || 0;
+  if (rain >= 0.2) return { wet: true };
+  const ws = H.wind_speed_10m[i] || 0, gu = H.wind_gusts_10m[i] || 0, [lo, hi] = a.ideal;
+  const s = 100 - (rain >= 0.05 ? 25 : 0) - Math.max(0, lo - t, t - hi) * 7 - Math.max(0, ws - a.wind) * 3 - Math.max(0, gu - a.gust) * 2;
+  return { s: Math.max(5, Math.round(s)) };
+}
+const scoreColor = s => s >= 80 ? '#4cbf7a' : s >= 60 ? '#a3cf5c' : s >= 40 ? '#e6c84f' : '#ef9a4f';
+const whenDay = (D, t) => { const k = dayKey(t); return k === D.todayKey ? "Aujourd'hui" : k === dayKey(D.now + DAY) ? 'Demain' : cap(fWdLong.format(t)); };
+function renderSlot(D) {
+  const a = ACTIVITIES[activity], H = D.H, sc = [];
+  for (let i = D.iNow + 1; i <= Math.min(D.last - 1, D.iNow + 40); i++) sc.push([i, hourScore(D, i, a)]);
+  let best = null;
+  for (let k = 0; k + a.len <= sc.length; k++) {
+    const win = sc.slice(k, k + a.len);
+    if (win.some(([, x]) => x.night || x.wet)) continue;
+    const ss = win.map(([, x]) => x.s), score = Math.min(...ss) * .7 + ss.reduce((p, q) => p + q, 0) / ss.length * .3;
+    if (!best || score > best.score + .5) best = { score, k, i0: win[0][0], i1: win[win.length - 1][0] };
+  }
+  const n = sc.length, pct = k => (k / n * 100).toFixed(2);
+  const cells = sc.map(([, x]) => `<i class="${x.night ? 'n' : x.wet ? 'w' : ''}"${x.s ? ` style="background:${scoreColor(x.s)}"` : ''}></i>`).join('');
+  const labs = sc.map(([i], k) => k === 0 ? `<span style="left:0">${hourOf(H.t[i])}h</span>`
+    : hourOf(H.t[i]) === 0 ? `<span style="left:${pct(k)}%">${wd(H.t[i]).replace('.', '').toLowerCase()}</span>` : '').join('');
+  let head;
+  if (best) {
+    const idx = []; for (let i = best.i0; i <= best.i1; i++) idx.push(i);
+    const T = idx.map(i => H.temperature_2m[i]), lo = Math.round(Math.min(...T)), hi = Math.round(Math.max(...T));
+    const verdict = best.score >= 80 ? ['idéal', '#bfe9cf'] : best.score >= 60 ? ['bien', '#dcefb9'] : best.score >= 40 ? ['correct', '#f4e6a6'] : ['faute de mieux', '#f8cfa8'];
+    head = `<div class="slot-best"><b>${whenDay(D, H.t[best.i0])}, ${hourOf(H.t[best.i0])}h - ${hourOf(H.t[best.i1] + HOUR)}h</b><span style="background:${verdict[1]}">${verdict[0]}</span></div>
+      <div class="slot-facts">sec · ${lo === hi ? deg(lo) : `${deg(lo)} à ${deg(hi)}`} · vent ${Math.round(Math.max(...idx.map(i => H.wind_speed_10m[i])))} km/h, rafales ${Math.round(Math.max(...idx.map(i => H.wind_gusts_10m[i])))} km/h</div>`;
+  } else head = `<div class="slot-best"><b>Pas de bon créneau d'ici ${fWdLong.format(H.t[sc[n - 1][0]])}</b></div><div class="slot-facts">pluie ou nuit sur toutes les heures</div>`;
+  $('slot').innerHTML = `<div class="acts">${Object.entries(ACTIVITIES).map(([k, v]) => `<button type="button" data-act="${k}" aria-pressed="${k === activity}">${v.label}</button>`).join('')}</div>
+    ${head}
+    <div class="tl-wrap"><div class="tl">${cells}</div>${best ? `<span class="tl-best" style="left:calc(${pct(best.k)}% - 2px);width:calc(${pct(a.len)}% + 3px)"></span>` : ''}</div>
+    <div class="tl-lab">${labs}</div>
+    <div class="legend"><span><i style="background:#4cbf7a"></i>idéal</span><span><i style="background:#e6c84f"></i>moyen</span><span><i style="background:#ef9a4f"></i>bof</span>
+      <span><i style="background:repeating-linear-gradient(135deg,var(--rain) 0 2px,transparent 2px 4px)"></i>pluie</span><span><i style="background:color-mix(in srgb,var(--ink) 16%,transparent)"></i>nuit</span></div>
+    <p class="note">Les ${n} prochaines heures, de jour seulement. ${a.label} : idéal entre ${a.ideal[0]} et ${a.ideal[1]}°, vent sous ${a.wind} km/h.</p>`;
+}
+
+/* Les trois modeles cote a cote, tant qu'ils se recouvrent (~4 jours) */
+const MODEL_LINES = [['meteofrance_arome_france_hd', 'AROME 1,5 km', '#e2663a'], ['meteofrance_arpege_europe', 'ARPEGE 11 km', '#2f7fe0'], ['ecmwf_ifs', 'ECMWF 9 km', '#9a6ad8']];
+function renderModels(D) {
+  const h = D.data.fc.hourly, t = h.time.map(s => s * 1000);
+  const series = MODEL_LINES.map(([id, name, color]) => ({ id, name, color, v: h['temperature_2m_' + id] || [] }));
+  const from = D.iNow, to = Math.min(series[1].v.findLastIndex(v => v != null), D.iNow + 96);
+  const W = 320, HH = 172, x = i => 6 + (i - from) / (to - from) * (W - 12);
+  const vals = series.flatMap(s => s.v.slice(from, to + 1).filter(v => v != null));
+  const lo = Math.floor(Math.min(...vals)) - 1, hi = Math.ceil(Math.max(...vals)) + 1, y = v => 14 + (hi - v) / (hi - lo) * 128;
+  let s = `<svg class="mchart" viewBox="0 0 ${W} ${HH}" role="img" aria-label="Température prévue par chaque modèle">`;
+  let n0 = null;
+  for (let i = from; i <= to + 1; i++) {
+    const night = i <= to && D.isNight(t[i]);
+    if (night && n0 == null) n0 = i;
+    if (!night && n0 != null) { s += `<rect x="${x(n0).toFixed(1)}" y="8" width="${(x(i - 1) - x(n0)).toFixed(1)}" height="${HH - 30}" rx="6" fill="var(--night)"/>`; n0 = null; }
+  }
+  for (let v = Math.ceil(lo / 5) * 5; v <= hi; v += 5) s += `<line x1="0" x2="${W}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--line)" stroke-dasharray="2 4"/><text x="2" y="${(y(v) - 3).toFixed(1)}">${v}°</text>`;
+  for (let i = from + 1; i <= to; i++) if (hourOf(t[i]) === 12 && x(i) > 18 && x(i) < W - 18) s += `<text x="${x(i).toFixed(1)}" y="${HH - 6}" text-anchor="middle">${wd(t[i]).replace('.', '').toLowerCase()} ${dayNum(t[i])}</text>`;
+  for (const sr of series) {
+    let d = '', pen = false;
+    for (let i = from; i <= to; i++) {
+      const v = sr.v[i];
+      if (v == null) { pen = false; continue; }
+      d += `${pen ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`;
+      pen = true;
+    }
+    s += `<path d="${d}" fill="none" stroke="${sr.color}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  s += '</svg>';
+  let worst = { s: 0, i: from }, sum = 0, cnt = 0;
+  for (let i = from; i <= to; i++) {
+    const v = series.map(sr => sr.v[i]).filter(z => z != null);
+    if (v.length < 2) continue;
+    const sp = Math.max(...v) - Math.min(...v);
+    sum += sp; cnt++;
+    if (sp > worst.s) worst = { s: sp, i };
+  }
+  const avg = sum / cnt, r1 = v => num1(Math.round(v * 10) / 10);
+  const at = i => `${whenDay(D, t[i]).toLowerCase()} vers ${hourOf(t[i])}h`;
+  const verdict = worst.s <= 2 ? `Oui : moins de 2° d'écart sur les ${Math.round((to - from) / 24)} prochains jours.`
+    : `${avg <= 1.5 ? 'Plutôt oui' : 'Pas vraiment'} : ${r1(avg)}° d'écart en moyenne, au plus ${r1(worst.s)}° ${at(worst.i)}.`;
+  const dayList = D.days.slice(0, 4);
+  const rows = series.map(sr => {
+    const cells = dayList.map(d => {
+      const cov = d.idx.filter(i => sr.v[i] != null);
+      if (cov.length < 20) return '<td>-</td>';
+      const mm = cov.reduce((p, i) => p + ((h['precipitation_' + sr.id] || [])[i + 1] || 0), 0);
+      return `<td data-mm="${mm}">${mm < 0.1 ? '0' : num1(Math.round(mm * 10) / 10)}</td>`;
+    }).join('');
+    return `<tr><td><i style="display:inline-block;width:10px;height:3px;border-radius:2px;background:${sr.color};vertical-align:3px;margin-right:6px"></i>${sr.name.split(' ')[0]}</td>${cells}</tr>`;
+  }).join('');
+  $('models').innerHTML = `<p class="verdict">${verdict}</p>${s}
+    <div class="mleg">${series.map(sr => `<span><i style="background:${sr.color}"></i>${sr.name}</span>`).join('')}</div>
+    <table class="rtab"><tr><th>Pluie (mm)</th>${dayList.map((d, k) => `<th>${k ? `${wd(d.t0).replace('.', '')} ${dayNum(d.t0)}` : 'Auj.'}</th>`).join('')}</tr>${rows}</table>
+    <p class="note">Quand les courbes se suivent, la prévision est solide. Quand elles s'écartent, l'app affiche le modèle le plus fin, mais c'est le signe de la prendre avec recul. Case orange : un modèle voit de la pluie, un autre presque rien.</p>`;
+  // desaccord sur la pluie : un modele >= 1 mm, un autre < 0,2 mm le meme jour
+  const tab = $('models').querySelector('.rtab');
+  dayList.forEach((d, k) => {
+    const col = [...tab.rows].slice(1).map(r => r.cells[k + 1]).filter(c => c.dataset.mm != null);
+    const mm = col.map(c => +c.dataset.mm);
+    if (mm.length > 1 && Math.max(...mm) >= 1 && Math.min(...mm) < 0.2) col.forEach(c => c.classList.add('off'));
+  });
+}
+
+/* 15 jours en courbe : maxi et mini du modele retenu, zones = plage p10-p90 des 51 scenarios, barres = proba de pluie */
+function renderDaysChart(D) {
+  const days = D.days, n = days.length, W = 320, HH = 214, cw = (W - 8) / n, cx = k => 4 + cw * (k + .5);
+  const all = days.flatMap(d => [d.tmin, d.tmax, d.ens && d.ens.min10, d.ens && d.ens.max90]).filter(v => v != null);
+  const lo = Math.floor(Math.min(...all)), hi = Math.ceil(Math.max(...all)), y = v => 20 + (hi - v) / (hi - lo || 1) * 118;
+  const band = (a, b, fill) => {
+    const ks = days.map((d, k) => d.ens ? k : null).filter(k => k != null);
+    if (ks.length < 2) return '';
+    const top = ks.map(k => `${cx(k).toFixed(1)},${y(days[k].ens[b]).toFixed(1)}`), bot = ks.slice().reverse().map(k => `${cx(k).toFixed(1)},${y(days[k].ens[a]).toFixed(1)}`);
+    return `<polygon points="${top.concat(bot).join(' ')}" fill="${fill}" opacity=".2"/>`;
+  };
+  let s = `<svg class="dchart" viewBox="0 0 ${W} ${HH}" role="img" aria-label="Températures des 15 prochains jours">`;
+  if (n > 10) s += `<rect x="${(cx(10) - cw / 2).toFixed(1)}" y="4" width="${(W - cx(10) + cw / 2).toFixed(1)}" height="${HH - 8}" rx="8" fill="var(--night)"/><text x="${(cx(10) - cw / 2 + 5).toFixed(1)}" y="14">tendance</text>`;
+  const relay = days.findIndex((d, k) => k && MODELS[d.src].name === 'ECMWF' && MODELS[days[k - 1].src].name !== 'ECMWF');
+  if (relay > 0) s += `<line x1="${(cx(relay) - cw / 2).toFixed(1)}" x2="${(cx(relay) - cw / 2).toFixed(1)}" y1="6" y2="${HH - 30}" stroke="var(--faint)" stroke-dasharray="3 3"/><text x="${(cx(relay) - cw / 2 + 4).toFixed(1)}" y="14">ECMWF</text>`;
+  s += band('max10', 'max90', '#f0953f') + band('min10', 'min90', '#4aa3df');
+  const maxPts = days.map((d, k) => [cx(k), y(d.tmax)]), minPts = days.map((d, k) => [cx(k), y(d.tmin)]);
+  s += `<path d="${smooth(maxPts)}" fill="none" stroke="#f0953f" stroke-width="2.6"/><path d="${smooth(minPts)}" fill="none" stroke="#4aa3df" stroke-width="2.6"/>`;
+  days.forEach((d, k) => {
+    s += `<circle cx="${cx(k).toFixed(1)}" cy="${y(d.tmax).toFixed(1)}" r="2.6" fill="#f0953f"/><circle cx="${cx(k).toFixed(1)}" cy="${y(d.tmin).toFixed(1)}" r="2.6" fill="#4aa3df"/>`;
+    s += `<text class="vmax" x="${cx(k).toFixed(1)}" y="${(y(d.tmax) - 7).toFixed(1)}" text-anchor="middle">${Math.round(d.tmax)}</text>`;
+    s += `<text x="${cx(k).toFixed(1)}" y="${(y(d.tmin) + 14).toFixed(1)}" text-anchor="middle">${Math.round(d.tmin)}</text>`;
+    const p = d.ens ? d.ens.pRain : 0;
+    if (p > 0.02) s += `<rect x="${(cx(k) - cw * .32).toFixed(1)}" y="${(178 - p * 24).toFixed(1)}" width="${(cw * .64).toFixed(1)}" height="${(p * 24).toFixed(1)}" rx="2" fill="var(--rain)" opacity="${(.3 + .6 * p).toFixed(2)}"/>`;
+    s += `<text x="${cx(k).toFixed(1)}" y="194" text-anchor="middle">${k ? wd(d.t0).slice(0, 2).toLowerCase() : 'auj'}</text><text x="${cx(k).toFixed(1)}" y="207" text-anchor="middle">${dayNum(d.t0)}</text>`;
+  });
+  s += `<line x1="0" x2="${W}" y1="178.5" y2="178.5" stroke="var(--line)"/></svg>`;
+  $('daysChart').innerHTML = s + `<div class="legend"><span><i style="background:#f0953f"></i>maxi</span><span><i style="background:#4aa3df"></i>mini</span><span><i style="background:var(--rain);opacity:.6"></i>proba de pluie ≥ 1 mm</span></div>`;
+}
+
+
+/* ---------- v2 : barre du bas, mini-barre, balayage entre les lieux, alerte gel ---------- */
+const ICO = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const VIEWS = [
+  ['today', "Aujourd'hui", ICO('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>')],
+  ['days', '15 jours', ICO('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01" stroke-width="2.8"/>')],
+  ['frost', 'Gel', ICO('<path d="M12 2.5v19M3.8 7.2l16.4 9.6M3.8 16.8l16.4-9.6M9.4 4.4L12 7l2.6-2.6M9.4 19.6L12 17l2.6 2.6"/>')],
+  ['sun', 'Soleil', ICO('<path d="M2.5 18.5h19M6.5 18.5a5.5 5.5 0 0 1 11 0M12 3.5v5M9.6 6L12 3.5 14.4 6M4.4 11.5l1.5 1M19.6 11.5l-1.5 1"/>')],
+  ['trust', 'Fiabilité', ICO('<path d="M12 3l7 3v5.5c0 4.3-3 7.6-7 9.5-4-1.9-7-5.2-7-9.5V6z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.6"/>')],
+];
+function show(k) {
+  document.body.dataset.view = k;
+  document.querySelectorAll('#tabbar [data-go]').forEach(b => b.setAttribute('aria-current', b.dataset.go === k));
+  window.scrollTo(0, 0);
+}
+function renderMini(D) {
+  const code = D.H.weather_code[D.iNow + 1] ?? D.H.weather_code[D.iNow], night = D.isNight(D.now), mb = $('minibar');
+  mb.style.setProperty('--sky1', $('hero').style.getPropertyValue('--sky1'));
+  mb.style.setProperty('--sky2', $('hero').style.getPropertyValue('--sky2'));
+  mb.innerHTML = `<button type="button" aria-label="Revenir à aujourd'hui">${ico(iconFor(code, night), 'ico mini-ico')}<b>${deg(D.temp)}</b><span>${esc(D.place.name)}</span><small>${label(code, night)}</small></button>`;
+}
+$('tabbar').innerHTML = VIEWS.map(([k, l, svg]) => `<button type="button" data-go="${k}" aria-current="false">${svg}<span>${l}</span></button>`).join('');
+$('tabbar').onclick = e => { const b = e.target.closest('[data-go]'); if (b) show(b.dataset.go); };
+$('minibar').onclick = () => show('today');
+show('today');
+
+// Balayage horizontal sur l'en-tete : lieu enregistre suivant / precedent
+function swipeTo(dir) {
+  const list = favs();
+  if (!list.length || (list.length === 1 && isFav(state.place))) return;
+  const i = list.findIndex(f => placeId(f) === placeId(state.place));
+  const next = list[i < 0 ? (dir > 0 ? 0 : list.length - 1) : (i + dir + list.length) % list.length];
+  const body = $('heroBody');
+  body.classList.remove('in-l', 'in-r');
+  void body.offsetWidth;
+  body.classList.add(dir > 0 ? 'in-l' : 'in-r');
+  load(next);
+}
+let touch0 = null;
+$('hero').addEventListener('touchstart', e => { touch0 = e.target.closest('.favs, button') ? null : e.touches[0]; }, { passive: true });
+$('hero').addEventListener('touchend', e => {
+  if (!touch0) return;
+  const t = e.changedTouches[0], dx = t.clientX - touch0.clientX, dy = t.clientY - touch0.clientY;
+  touch0 = null;
+  if (Math.abs(dx) > 60 && Math.abs(dy) < 50) swipeTo(dx < 0 ? 1 : -1);
+});
+$('hdots').addEventListener('click', e => { const b = e.target.closest('[data-dot]'); if (b) load(favs()[+b.dataset.dot]); });
+
+$('slot').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b && state.D) { activity = b.dataset.act; renderSlot(state.D); } });
+$('daysSeg').addEventListener('click', e => {
+  const b = e.target.closest('[data-mode]'); if (!b) return;
+  $('daysSeg').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  $('days').hidden = b.dataset.mode !== 'liste';
+  $('daysChart').hidden = b.dataset.mode !== 'courbe';
+});
+
+// Alerte gel : le service worker verifie la nuit a venir via la synchro periodique (Chrome Android, app installee)
+const alertSupported = 'serviceWorker' in navigator && 'periodicSync' in ServiceWorkerRegistration.prototype && 'Notification' in window;
+let alertMsg = '';
+function renderAlert() {
+  const on = store.get('alert'), here = state.place;
+  let txt, btns = '';
+  if (!alertSupported) txt = "Une notification quand la nuit à venir risque de geler. Disponible sur Android, dans Chrome, une fois l'app installée sur l'écran d'accueil.";
+  else if (on) {
+    txt = `Activée pour ${esc(on.name)}. Chrome vérifie quelques fois par jour, à son rythme, et ne prévient qu'une fois par nuit.`;
+    btns = `<button type="button" class="ghost" data-alert="test">Tester</button><button type="button" class="ghost" data-alert="off">Désactiver</button>`;
+  } else {
+    txt = 'Une notification quand la nuit à venir risque de geler (gel, ou gelée blanche par nuit claire et calme).';
+    if (here) btns = `<button type="button" data-alert="on">Activer pour ${esc(here.name)}</button>`;
+  }
+  $('alert').innerHTML = `<div class="alert"><div><b>Alerte gel</b>${alertMsg || txt}</div>${btns}</div>`;
+  alertMsg = '';
+}
+async function alertAction(kind) {
+  const reg = await navigator.serviceWorker.ready;
+  if (kind === 'off') {
+    await reg.periodicSync.unregister('gel');
+    reg.active.postMessage({ type: 'gel-config', alert: null });
+    store.del('alert');
+  } else {
+    if (await Notification.requestPermission() !== 'granted') { alertMsg = 'Notifications refusées : autorisez-les dans les réglages du site.'; return renderAlert(); }
+    if (kind === 'on') {
+      const perm = await navigator.permissions.query({ name: 'periodic-background-sync' }).catch(() => ({ state: 'denied' }));
+      if (perm.state !== 'granted') { alertMsg = "Chrome ne permet la vérification en arrière-plan qu'à une app installée : installez Ciel sur l'écran d'accueil, puis réessayez."; return renderAlert(); }
+      const p = { name: state.place.name, lat: state.place.lat, lon: state.place.lon };
+      await reg.periodicSync.register('gel', { minInterval: 6 * HOUR });
+      reg.active.postMessage({ type: 'gel-config', alert: p });
+      store.set('alert', p);
+    } else reg.active.postMessage({ type: 'gel-test' });
+  }
+  renderAlert();
+}
+$('alert').addEventListener('click', e => { const b = e.target.closest('[data-alert]'); if (b) alertAction(b.dataset.alert).catch(err => { alertMsg = `Impossible : ${esc(err.message)}`; renderAlert(); }); });
+applyTheme(store.get('theme', 'dark'));
 renderFoot();
 load(placeFromHash() || store.get('place') || DEFAULT_PLACE);
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register(`sw.js?v=${APP_VERSION}`).catch(() => {});
