@@ -155,13 +155,13 @@ A « 51 scénarios »**, un soleil dont les 51 rayons ont des longueurs différe
 des scénarios ECMWF (l'indice de confiance en symbole). Écartées : B « Horizon », C « ciel » écrit,
 D « Jour et nuit ».
 
-**v6 (2026-11-02, locale)** : retour de Simon, au téléphone les libellés « pluie / vent / ressenti /
+**v6 (2026-11-02, `70ec25d`, en ligne)** : retour de Simon, au téléphone les libellés « pluie / vent / ressenti /
 humidité » de l'heure par heure débordaient sur le graphique et rendaient mal. La colonne fixe de
 gauche affiche désormais les **pictos des tuiles** (parapluie, vent, thermomètre, goutte, soleil, en
 couleur) au lieu de mots, et les trois lignes du bas sont plus espacées (ressenti, humidité, UV).
 Vérifié en 375 px, y compris avec le texte du graphique agrandi de 30 %.
 
-**Statut : v5 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
+**Statut : v6 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
 branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
 Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
 ceux de Harmonic Atlas et Chess Analyst (non touchés). Pas encore vérifié en ligne avec des données
