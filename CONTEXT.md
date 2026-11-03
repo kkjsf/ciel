@@ -161,7 +161,7 @@ gauche affiche désormais les **pictos des tuiles** (parapluie, vent, thermomèt
 couleur) au lieu de mots, et les trois lignes du bas sont plus espacées (ressenti, humidité, UV).
 Vérifié en 375 px, y compris avec le texte du graphique agrandi de 30 %.
 
-**v7 (2026-11-03, en ligne)** : demande de Simon, alléger l'interface. Le module **« Meilleur créneau
+**v7 (2026-11-03, `f18bf62`, en ligne, vérifiée avec données réelles)** : demande de Simon, alléger l'interface. Le module **« Meilleur créneau
 pour sortir » est retiré** (jugé pas utile : carte, CSS `.acts` / `.slot-*` / `.tl-*`, `ACTIVITIES`,
 `hourScore`, `renderSlot`). Les **notes et légendes sous les cartes** (« lignes du bas, de haut en bas »,
 lecture des 15 jours, légende et note du gel, note des modèles, première note des sources) passent dans
