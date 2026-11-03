@@ -249,7 +249,7 @@ sommets », puis « ou alors utilise l'altitude Wikipédia »). Les deux sont co
 - Les sommets gardés d'avant (lieu en cours, favoris, liens sans `s=`) sont mis à jour seuls (`upgradeAlt`, appelé
   par `load`) ; la recherche IGN classe désormais le vrai Mont Blanc avant celui du Pas-de-Calais (57 m).
 
-**Statut : v10 en ligne** (vérifiée en ligne le 2026-11-03 avec données réelles) (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
+**Statut : v10 en ligne** (`b163340`, vérifiée en ligne le 2026-11-03 avec données réelles : un ancien lien Ossau à 2 847 m passe seul à 2 884 m, Petit Pic 2 808 m) (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
 branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
 Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
 ceux de Harmonic Atlas et Chess Analyst (non touchés). Pas encore vérifié en ligne avec des données
