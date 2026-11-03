@@ -65,7 +65,8 @@ ouvertes de Météo-France (Licence Ouverte Etalab) et de l'ECMWF (CC BY 4.0).
 | Explorer : avant | réanalyse ERA5 (Copernicus / ECMWF), depuis 1940 | archive-api |
 | Montagne (v8) : iso 0, vent en altitude, CAPE | niveaux de pression 1000 à 500 hPa d'AROME 2,5 km puis d'ARPEGE (AROME 1,5 km n'en a pas, ECMWF IFS non plus chez Open-Meteo) | forecast, `models=meteofrance_arome_france0025,meteofrance_arpege_europe` |
 | Bilan du mois (v8) | archives des prévisions à courte échéance (`best_match`, Météo-France en France) ; repli : `past_days=62` de l'API de prévision | historical-forecast-api, daily |
-| sommets, cols, refuges (v8) | index des lieux IGN (BD TOPO), altitude au point par l'altimétrie IGN | `data.geopf.fr/geocodage` (`index=poi`), `data.geopf.fr/altimetrie` |
+| sommets, cols, refuges (v8) | index des lieux IGN (BD TOPO), triés par score moins 0,04 x classification IGN (1 = très connu, 8 = mineur) | `data.geopf.fr/geocodage` (`index=poi`) |
+| altitude d'un sommet, col, refuge (v10) | Wikidata (P2044, altitude de Wikipédia) si un élément du même nom est à moins de 1,5 km ; sinon point le plus haut du LiDAR HD IGN autour du nom (sommets) ou LiDAR au point (cols, refuges) ; repli RGE ALTI hors LiDAR | `query.wikidata.org/sparql` (`wikibase:around`), `data.geopf.fr/altimetrie` (POST, `ign_lidar_hd_mnt_multi_wld` puis `ign_rge_alti_wld`) |
 
 **Fusion** : pour chaque heure et chaque variable, la première valeur non nulle dans l'ordre
 AROME HD > AROME 2,5 > ARPEGE > ECMWF. La source d'une heure = le modèle qui a fourni sa
@@ -228,7 +229,27 @@ inversé : d'abord `past_days=62` de l'API de prévision (0,3 s), l'archive seul
 du mois précédent (fin de mois long), avec un délai maximal de 15 s (`getJSON(url, tries, ms)` accepte
 désormais un délai, `AbortSignal.timeout`).
 
-**Statut : v9 en ligne** (`bc7b60c`, vérifiée en ligne le 2026-11-03 avec données réelles) (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
+**v10 (2026-11-03)** : la vraie altitude des sommets, à la demande de Simon (« mets plutôt la vraie altitude des
+sommets », puis « ou alors utilise l'altitude Wikipédia »). Les deux sont combinés (`altBatch`), lancés en parallèle :
+- **Wikidata** : une requête SPARQL pour toute la liste (`VALUES (?i ?c)` + `wikibase:around` 1,5 km, `psn:P2044`
+  normalisé en mètres, rang non déprécié, libellés et alias fr/en/oc/ca/es/eu/it/de). On garde l'élément du **même
+  nom** le plus proche (`nameKeys`/`sameName` : variantes « (…) », « ou », « / », sans accents ni article, mot
+  générique pic/mont/puy... retiré mais pas confondu avec col/refuge/lac), et pour un sommet seulement si la valeur
+  n'est pas plus basse que le point du nom (Pic d'Asti 3 220 m écarté pour « l'Asti (Mont Aiguillette) », 3 298 m).
+- **LiDAR HD** (MNT au demi-mètre) pour un sommet absent de Wikidata (`climb`) : montée depuis le point du nom par
+  grilles 7x7 au pas de 20 m tant que le point haut est au bord (6 tours au plus), puis 4 m et 1 m ; une seule
+  requête POST par tour pour tous les sommets. Un maximum global dans un disque de 250 m prenait le flanc du voisin
+  (Petit Pic d'Ossau 2 870 au lieu de 2 808) ; la montée locale reste sur le sommet nommé.
+- Banc de 26 sommets (scratchpad `alt_proto.mjs`) : Wikidata exact sur 20, LiDAR à 1-2 m près sauf sommet plat ou
+  aménagé (Mont Aiguille 2 065 au lieu de 2 087, Pic du Midi de Bigorre 2 871 au lieu de 2 877), Wikidata les corrige.
+- La liste de recherche s'affiche tout de suite et les altitudes arrivent 1 à 4 s après (600 ms après la dernière
+  frappe ; une liste dépassée s'arrête, `alive`). Choisir un sommet attend son altitude 5 s au plus.
+- `altSrc` (`wiki`, `top`, `pt`) dans le lieu et le lien (`s=`, `s=user` pour une altitude choisie) : carte Montagne
+  « (altitude Wikipédia) », « (point culminant, relief IGN) », ligne « Altitude du lieu » dans Sources.
+- Les sommets gardés d'avant (lieu en cours, favoris, liens sans `s=`) sont mis à jour seuls (`upgradeAlt`, appelé
+  par `load`) ; la recherche IGN classe désormais le vrai Mont Blanc avant celui du Pas-de-Calais (57 m).
+
+**Statut : v10 en ligne** (vérifiée en ligne le 2026-11-03 avec données réelles) (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
 branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
 Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
 ceux de Harmonic Atlas et Chess Analyst (non touchés). Pas encore vérifié en ligne avec des données
@@ -249,10 +270,17 @@ sans `-I` : PIL est dans le site-packages de l'utilisateur).
   roland » trouve le refuge. Comme la catégorie `refuge` est déjà filtrée, le mot « refuge » est retiré
   de la requête de cette catégorie. Le « Canigou » seul ne remonte le pic qu'avec le filtre de
   catégorie (sans filtre, 40 lotissements et résidences passent devant).
-- **Altitude IGN au point du nom, pas au sommet** : Pic du Midi d'Ossau 2 847 m au lieu de 2 884 m,
-  Canigou 2 761 m au lieu de 2 784 m (le point du toponyme est à côté du sommet ; chercher le maximum
-  autour ne change rien). La BD TOPO n'a pas de Z sur ses détails orographiques. D'où l'altitude
-  modifiable dans la carte.
+- **Altitude IGN au point du nom, pas au sommet** (réglé en v10) : Pic du Midi d'Ossau 2 847 m au lieu de
+  2 884 m. Le RGE ALTI (`ign_rge_alti_wld`) lisse les sommets : son maximum autour du point est le point
+  lui-même. Le LiDAR HD (`ign_lidar_hd_mnt_multi_wld`, toute la France, POST et CORS ouverts) retrouve
+  2 884 m. La BD TOPO n'a pas de Z sur ses détails orographiques.
+- **Altimétrie IGN limitée** : `429` au-delà d'une dizaine de requêtes en 2 à 3 s (une recherche tapée lettre
+  par lettre lançait une montée par liste intermédiaire et la dernière n'avait plus rien). D'où le délai de
+  600 ms, l'arrêt des listes dépassées, une requête par tour pour tous les sommets et un nouvel essai sur `429`
+  (`getJSON` retente désormais `429` comme `5xx`). Le service a aussi répondu une fois **0 m** sur un sommet :
+  une valeur nulle ou négative compte comme absente, et un point haut sous le point du nom est rejeté.
+- **Wikidata depuis Node** : `403` sans en-tête `User-Agent` (règle Wikimedia) ; le navigateur envoie le sien.
+  Une liste vide donne `500` (VALUES vide), d'où l'appel seulement avec au moins un lieu.
 - **`historical-forecast-api` lente ou en 503** pendant les tests du 2026-11-03 (jusqu'à 38 s pour une
   réponse 200, et `meteofrance_seamless` qui y dépasse le délai) : le bilan du mois lit d'abord
   `past_days=62` de l'API de prévision et n'appelle l'archive, avec un délai de 15 s, que s'il manque des jours.

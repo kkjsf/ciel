@@ -499,8 +499,8 @@ a { color: var(--accent); }
 
 <script>
 'use strict';
-const APP_VERSION = '9';
-const APP_BUILT = '03/11/2026 11h25';
+const APP_VERSION = '10';
+const APP_BUILT = '03/11/2026 13h22';
 const TZ = 'Europe/Paris';
 const HOUR = 3600e3, DAY = 864e5;
 const DEFAULT_PLACE = { name: 'Toulouse', lat: 43.6045, lon: 1.4442, cp: '31000', dep: 'Haute-Garonne' };
@@ -717,12 +717,12 @@ function sky(code, night, twilight) {
 
 /* ---------- donnees ---------- */
 // Open-Meteo repond parfois 503 « service overloaded » quelques minutes : on retente avant d'abandonner
-async function getJSON(url, tries = 1, ms = 0) {
+async function getJSON(url, tries = 1, ms = 0, init = {}) {
   for (let k = 1; ; k++) {
     try {
-      const r = await fetch(url, ms ? { signal: AbortSignal.timeout(ms) } : undefined);
+      const r = await fetch(url, ms ? { ...init, signal: AbortSignal.timeout(ms) } : init);
       if (r.ok) return r.json();
-      if (r.status < 500 || k >= tries) throw Object.assign(new Error(`HTTP ${r.status}`), { status: r.status, final: true });
+      if ((r.status < 500 && r.status !== 429) || k >= tries) throw Object.assign(new Error(`HTTP ${r.status}`), { status: r.status, final: true });
     } catch (e) {
       if (e.final || k >= tries) throw e;
     }
@@ -1370,7 +1370,8 @@ function renderSources(D) {
     ['ECMWF, 51 scénarios', 'Indice de confiance, probabilités de pluie et de gel', runOf('ecmwf_ifs025_ensemble')],
     ['Copernicus CAMS', 'UV, qualité de l\'air et pollens', ''],
   ];
-  if (D.data.alt) rows.push(['Montagne', "Isotherme 0 °C, limite pluie-neige, vent en altitude et énergie orageuse : niveaux d'altitude d'AROME 2,5 km puis d'ARPEGE", '']);
+  if (D.place.kind && D.place.alt != null) rows.push(['Altitude du lieu', D.place.altUser ? 'Choisie dans la carte Montagne' : ALT_TXT[D.place.altSrc] || ALT_TXT.pt, '']);
+  if (D.data.alt) rows.push(['Montagne',"Isotherme 0 °C, limite pluie-neige, vent en altitude et énergie orageuse : niveaux d'altitude d'AROME 2,5 km puis d'ARPEGE", '']);
   if (D.data.month) rows.push(['Bilan du mois', 'Archives des prévisions Météo-France à quelques heures d\'échéance', '']);
   const N = D.norm;
   if (N) rows.push(['Normales et records', `Météo-France, fiche climatologique de la station ${esc(stationTxt(N))} (${N.alt} m, à ${Math.round(N.dist)} km), normales ${N.p}${altFix(N) ? `, corrigées de ${anomTxt(altFix(N))} pour l'altitude du lieu (${Math.round(N.elev)} m)` : ''}`, `fiche du<br>${N.edition}`]);
@@ -1397,6 +1398,8 @@ const placeAlt = D => D.place.alt ?? D.data.fc.elevation;
 const isMountain = D => D.place.alt != null || (D.data.fc.elevation ?? 0) >= MOUNTAIN_FROM;
 const KINDS = { 'retenue-barrage': 'lac', 'détail orographique': 'sommet' };
 const kindLabel = k => cap(KINDS[k] || k);
+const ALT_SRC = { wiki: ' (altitude Wikipédia)', top: ' (point culminant, relief IGN)', pt: ' (relief IGN au point)' };
+const ALT_TXT = { wiki: 'Wikipédia (Wikidata) : l\'altitude publiée pour ce lieu', top: 'Point le plus haut du relief LiDAR HD de l\'IGN (au demi-mètre) autour du nom, absent de Wikipédia', pt: 'Relief de l\'IGN au point du lieu' };
 const BOLT = (x, y, s = 1) => `<path transform="translate(${x.toFixed(1)} ${y}) scale(${s})" d="M1-7L-4 1h3.2L-2 7 4-1H.8z" fill="var(--sun)"/>`;
 // Altitude ou l'air passe sous 0 °C pour de bon : au-dessus du dernier niveau encore positif
 function iso0(lv) {
@@ -1491,7 +1494,7 @@ function renderMountain(D) {
   if (card.hidden) return;
   const z = Math.round(placeAlt(D)), p = D.place;
   $('mountainNote').textContent = fmtM(z);
-  const head = `<div class="mt-head"><span>Prévision calculée à <b>${fmtM(z)}</b>${p.altUser ? '' : p.kind ? ' (altitude IGN au point)' : p.alt == null ? ' (altitude du modèle de terrain)' : ''}</span>
+  const head = `<div class="mt-head"><span>Prévision calculée à <b>${fmtM(z)}</b>${p.altUser ? '' : p.kind ? ALT_SRC[p.altSrc] || ALT_SRC.pt : p.alt == null ? ' (altitude du modèle de terrain)' : ''}</span>
     <button type="button" class="mt-edit" data-alt-edit>Changer l'altitude</button></div>
     <form class="mt-form" id="altForm" hidden><label>Altitude <input type="number" name="alt" min="0" max="4810" step="1" value="${z}" inputmode="numeric"> m</label><button type="submit">Calculer</button></form>`;
   const S = D.data.alt && D.data.alt.hourly ? altSeries(D, z) : [];
@@ -1630,6 +1633,7 @@ async function load(place) {
   $('placeName').textContent = place.name;
   const cached = store.get('data:' + placeId(place));
   if (cached) { state.data = cached; render(); } else if (switching) clearView();
+  upgradeAlt(place);
   if (state.loading) return;
   state.loading = true;
   $('refreshBtn').classList.add('spin');
@@ -1672,6 +1676,7 @@ function setHash(p) {
   if (p.dep) q.set('d', p.dep);
   if (p.alt != null) q.set('a', p.alt);
   if (p.kind) q.set('k', p.kind);
+  if (p.altUser || p.altSrc) q.set('s', p.altUser ? 'user' : p.altSrc);
   if (p.town) q.set('t', p.town);
   history.replaceState(null, '', '#' + q.toString());
 }
@@ -1683,6 +1688,7 @@ function placeFromHash() {
   const p = { lat, lon, name: q.get('n') || 'Lieu', cp: q.get('cp') || '', dep: q.get('d') || '' }, a = parseInt(q.get('a'), 10);
   if (isFinite(a)) p.alt = a;
   if (q.get('k')) p.kind = q.get('k');
+  if (q.get('s') === 'user') p.altUser = true; else if (q.get('s')) p.altSrc = q.get('s');
   if (q.get('t')) p.town = q.get('t');
   return p;
 }
@@ -1722,27 +1728,133 @@ function renderSheet() {
 // Recherche via l'API Adresse (BAN) : tolere « st », les apostrophes manquantes et les codes postaux
 const toPlace = f => ({ name: f.properties.name, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], cp: f.properties.postcode || '', dep: (f.properties.context || '').split(', ')[1] || '' });
 const findPlaces = q => getJSON(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&type=municipality&autocomplete=1&limit=8`).then(r => r.features.map(toPlace));
-// Sommets, cols, refuges : index des lieux de l'IGN (BD TOPO), altitude au point par le service d'altimetrie IGN
+// Sommets, cols, refuges : index des lieux de l'IGN (BD TOPO), les plus connus d'abord (classification IGN, 1 a 8)
 const TOPO = 'élément topographique ou forestier';
+const normName = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[’`]/g, "'").replace(/[-_.]/g, ' ')
+  .replace(/\s+/g, ' ').trim().replace(/^(le|la|les) |^l'/, '');
+const rankOf = (pr, q) => pr.score - .04 * (pr.classification || 8) + (normName(pr.toponym) === normName(q) ? .05 : 0);
 async function findPeaks(q) {
   // la recherche IGN veut des mots proches : « refuge » est deja dans la categorie, on l'enleve de la requete
   const u = (q, cat, n) => `https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(q)}&index=poi&limit=${n}&category=${encodeURIComponent(cat)}`;
   const qr = q.replace(/\brefuges?\b/i, '').trim() || q;
   const found = (await Promise.all([[q, TOPO, 5], [qr, 'refuge', 3]].map(([w, c, n]) => getJSON(u(w, c, n)).then(r => r.features).catch(() => [])))).flat();
-  const list = found.sort((a, b) => b.properties.score - a.properties.score).map(f => {
+  return found.sort((a, b) => rankOf(b.properties, q) - rankOf(a.properties, q)).map(f => {
     const pr = f.properties, [lon, lat] = f.geometry.coordinates;
     const kind = pr.category.find(c => c !== TOPO && c !== "zone d'activité ou d'intérêt" && c !== 'détail orographique') || pr.category[0];
     return { name: pr.toponym, lat: +lat.toFixed(5), lon: +lon.toFixed(5), kind, city: (pr.city || [])[0] || '', cp: '', dep: '' };
   });
-  if (list.length) {
-    const r = await getJSON(`https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json?lon=${list.map(p => p.lon).join('|')}&lat=${list.map(p => p.lat).join('|')}&resource=ign_rge_alti_wld&zonly=true`).catch(() => null);
-    if (r) list.forEach((p, i) => { const z = r.elevations[i]; if (z > -100) p.alt = Math.round(z); });
+}
+// Altitude d'un sommet, col ou refuge : celle de Wikipedia (Wikidata) si le nom y figure a moins de 1,5 km ; sinon le relief
+// LiDAR HD de l'IGN (au demi-metre), au point le plus haut pour un sommet : le nom est ecrit a cote, souvent 20 a 80 m plus bas
+const ALTI = 'https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json', LIDAR = 'ign_lidar_hd_mnt_multi_wld', RGE = 'ign_rge_alti_wld';
+const alti = (pts, resource) => getJSON(ALTI, 2, 10000, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ lon: pts.map(p => p.lon.toFixed(6)).join('|'), lat: pts.map(p => p.lat.toFixed(6)).join('|'), resource, zonly: 'true' }) }).then(r => r.elevations);
+const SUMMIT = /^(pic|sommet|volcan|crête|détail orographique)$/;
+const GEN = { S: 'pic|pico|puig|tuc|tuca|mont|monte|puy|sommet|cime|tete|aiguille|pointe|cret|signal|roc|rocher|montagne|serre|truc', C: 'col|port|pas|hourquette|breche', R: 'refuge|cabane|abri|chalet|gite', L: 'lac|etang' };
+const GEN_OF = Object.fromEntries(Object.entries(GEN).flatMap(([g, w]) => w.split('|').map(x => [x, g])));
+const GEN_RE = new RegExp(`^(${Object.values(GEN).join('|')}) (?:(?:de la|des|du|de) |de l'|d')?`);
+// « Pic du Canigou (Pic del Canigó) », « Pic de Néouvielle ou d'Aubert » : chaque variante, sans le mot generique (pic, col...)
+// qu'un des deux noms peut omettre (« Pic du Montcalm » = « Montcalm »), mais pas un pic pour un col du meme nom
+const nameKeys = s => [s, ...s.split(/ ou |\s*[()\/]\s*/)].map(normName).filter(n => n.length > 2).map(n => {
+  const m = n.match(GEN_RE);
+  return m && n.length > m[0].length ? { g: GEN_OF[m[1]], c: n.slice(m[0].length) } : { g: '', c: n };
+});
+const sameName = (a, b) => a.some(x => b.some(y => x.c === y.c && (x.g === y.g || !x.g || !y.g)));
+async function wikiAlts(list) {
+  const c = list.map((p, i) => `(${i} "Point(${p.lon} ${p.lat})"^^geo:wktLiteral)`).join(' ');
+  const q = `SELECT ?i ?item ?label ?ele ?rk ?loc WHERE { VALUES (?i ?c) { ${c} }
+    SERVICE wikibase:around { ?item wdt:P625 ?loc . bd:serviceParam wikibase:center ?c . bd:serviceParam wikibase:radius "1.5" . }
+    ?item p:P2044 ?st . ?st wikibase:rank ?rk ; psn:P2044/wikibase:quantityAmount ?ele . FILTER(?rk != wikibase:DeprecatedRank)
+    ?item rdfs:label|skos:altLabel ?label . FILTER(lang(?label) IN ("fr", "en", "oc", "ca", "es", "eu", "it", "de")) }`;
+  const r = await getJSON('https://query.wikidata.org/sparql?format=json&query=' + encodeURIComponent(q), 1, 6000);
+  return r.results.bindings.map(b => {
+    const [lon, lat] = b.loc.value.match(/-?[\d.]+/g).map(Number);
+    return { i: +b.i.value, item: b.item.value, label: b.label.value, ele: +b.ele.value, pref: b.rk.value.endsWith('PreferredRank'), lat, lon };
+  });
+}
+// L'element Wikidata du meme nom le plus proche ; un sommet n'est pas plus bas que le point ou son nom est ecrit
+function wikiPick(p, rows, z) {
+  const keys = nameKeys(p.name), d = w => km(p.lat, p.lon, w.lat, w.lon);
+  const ok = rows.filter(w => sameName(keys, nameKeys(w.label)) && (z == null || (SUMMIT.test(p.kind) ? w.ele >= z - 25 : Math.abs(w.ele - z) <= 120)));
+  ok.sort((a, b) => d(a) - d(b) || b.pref - a.pref || a.ele % 1 - b.ele % 1);
+  return ok.length ? Math.round(ok[0].ele) : null;
+}
+const PHASES = [[20, 3, 6], [4, 3, 2], [1, 2, 1]];
+function grid(c, step, n) {
+  const k = Math.cos(c.lat * Math.PI / 180), out = [];
+  for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++)
+    out.push({ lat: c.lat + i * step / 111320, lon: c.lon + j * step / (111320 * k), edge: Math.max(Math.abs(i), Math.abs(j)) === n });
+  return out;
+}
+// On monte depuis le point du nom par pas de 20 m tant que le point haut est au bord de la grille, puis on affine a 4 m et 1 m :
+// on arrive au sommet nomme et pas sur un voisin plus haut. Une seule demande par tour pour tous les sommets : l'IGN
+// refuse au-dela d'une dizaine de demandes en quelques secondes.
+async function climb(list, alive) {
+  const st = list.map(p => ({ c: p, z: -Infinity, ph: 0, r: 0 }));
+  for (let round = 0; round < 12; round++) {
+    if (!alive()) return null;
+    const act = st.filter(s => s.ph < PHASES.length);
+    if (!act.length) break;
+    const grids = act.map(s => grid(s.c, ...PHASES[s.ph])), zs = await alti(grids.flat(), LIDAR);
+    let k = 0;
+    act.forEach((s, j) => {
+      const g = grids[j], z = zs.slice(k, k += g.length), i = z.indexOf(Math.max(...z)), up = z[i] > s.z;
+      if (up) { s.c = g[i]; s.z = z[i]; }
+      if (up && g[i].edge && ++s.r < PHASES[s.ph][2]) return;
+      s.ph++; s.r = 0;
+    });
   }
+  return st.map(s => s.z);
+}
+// Wikidata, le point et la montee en meme temps : la reponse arrive au rythme du plus lent, 1 a 3 s
+async function altBatch(todo, alive) {
+  const tops = todo.filter(p => SUMMIT.test(p.kind));
+  const [rows, lid, top] = await Promise.all([wikiAlts(todo).catch(() => []), alti(todo, LIDAR).catch(() => []), tops.length ? climb(tops, alive).catch(() => null) : null]);
+  if (!alive()) return [];
+  // hors LiDAR, le service repond -99999 ; il lui arrive aussi de repondre 0 d'un coup : on prend alors le RGE ALTI
+  const miss = todo.filter((p, i) => !(lid[i] > 0)), rge = miss.length ? await alti(miss, RGE).catch(() => []) : [];
+  return todo.map((p, i) => {
+    const zl = lid[i] > 0 ? lid[i] : null, zr = rge[miss.indexOf(p)], zPt = zl ?? (zr > -100 ? zr : null);
+    const wiki = wikiPick(p, rows.filter(w => w.i === i), zPt), zt = top && top[tops.indexOf(p)];
+    return wiki != null ? { alt: wiki, src: 'wiki' } : zl != null && zt >= zl - 1 ? { alt: Math.round(zt), src: 'top' } : zPt != null ? { alt: Math.round(zPt), src: 'pt' } : null;
+  });
+}
+// Une demande par liste de resultats ; un lieu deja demande reprend la meme reponse. Une liste depassee par la frappe
+// s'arrete (alive) et n'est pas gardee.
+const altJobs = new Map(), altKey = p => `${p.lat},${p.lon}`;
+async function resolveAlts(list, alive = () => true, again = true) {
+  const todo = list.filter(p => !altJobs.has(altKey(p)));
+  if (todo.length) {
+    const job = altBatch(todo, alive).catch(() => []);
+    todo.forEach((p, i) => altJobs.set(altKey(p), job.then(r => { if (!r[i]) altJobs.delete(altKey(p)); return r[i]; })));
+  }
+  const got = await Promise.all(list.map(p => altJobs.get(altKey(p))));
+  list.forEach((p, i) => { if (got[i]) { p.alt = got[i].alt; p.altSrc = got[i].src; } });
+  // un lieu attendu dans une liste abandonnee entre-temps (ou un refus passager) : une seconde demande
+  const lost = list.filter((p, i) => !got[i]);
+  if (again && lost.length && alive()) await resolveAlts(lost, alive, false);
+  const fl = favs(), nf = fl.map(f => { const q = f.kind && !f.altSrc && !f.altUser && list.find(p => p.altSrc && p.lat === f.lat && p.lon === f.lon); return q ? { ...f, alt: q.alt, altSrc: q.altSrc } : f; });
+  if (nf.some((f, i) => f !== fl[i])) store.set('favs', nf);
   return list;
+}
+// Sommet garde d'avant la v10 (altitude prise au point du nom) : on va chercher la vraie
+function upgradeAlt(place) {
+  if (!place.kind || place.altSrc || place.altUser) return;
+  const old = placeId(place);
+  resolveAlts([{ ...place }]).then(([q]) => {
+    if (!q.altSrc || !state.place || placeId(state.place) !== old) return;
+    if (q.alt !== place.alt) load(q);
+    else { state.place = q; store.set('place', q); setHash(q); render(); }
+  });
 }
 // Un sommet n'a ni code postal ni departement : on prend ceux de sa commune (liens meteofrance.com et vigilance)
 async function pickPlace(p) {
   $('sheet').close();
+  if (p.kind && !p.altSrc && !p.altUser) {
+    $('placeName').textContent = p.name;
+    $('refreshBtn').classList.add('spin');
+    await Promise.race([resolveAlts([p]), new Promise(r => setTimeout(r, 5000))]);
+  }
   load(p);
   if (!p.kind || p.dep) return;
   try {
@@ -1767,6 +1879,10 @@ function search(q) {
     results = [...(towns || []).slice(0, 6), ...(peaks || [])];
     if (!results.length) $('results').innerHTML = '<div class="empty">Aucun lieu trouvé.</div>';
     else renderSheet();
+    // les altitudes arrivent apres la liste, une fois la frappe posee
+    const pk = results.filter(p => p.kind);
+    const alive = () => seq === searchSeq;
+    if (pk.length) setTimeout(() => alive() && resolveAlts(pk, alive).then(() => alive() && renderSheet()), 600);
   }, 220);
 }
 function locate() {
@@ -2013,7 +2129,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp();
 
 /* ---------- v8 : guide d'utilisation, fait des textes d'aide des cartes ---------- */
 const smp = inner => `<svg class="smp" viewBox="0 0 36 14" aria-hidden="true">${inner}</svg>`;
-HELP.mountain = `<p>Pour un sommet, un col ou un refuge choisi dans la recherche, ou une commune au-dessus de ${MOUNTAIN_FROM} m, toute la prévision est calculée à son altitude : températures, ressenti, gel, normales. L'altitude IGN est prise au point où est écrit le nom, parfois un peu sous le vrai sommet : elle se corrige en haut de la carte.</p>` + helpRows([
+HELP.mountain = `<p>Pour un sommet, un col ou un refuge choisi dans la recherche, ou une commune au-dessus de ${MOUNTAIN_FROM} m, toute la prévision est calculée à son altitude : températures, ressenti, gel, normales. L'altitude est celle de Wikipédia quand le lieu y figure, sinon le point le plus haut du relief de l'IGN (relevé laser au demi-mètre) autour du nom ; elle se change en haut de la carte.</p>` + helpRows([
   [smp('<path d="M2 7h32" stroke="#f0953f" stroke-width="2.6"/>'), "isotherme 0 °C : l'altitude où l'air passe sous 0 °C ; au-dessus, il gèle"],
   [smp('<path d="M2 7h32" stroke="var(--rain)" stroke-width="1.8" stroke-dasharray="5 4"/>'), "limite pluie-neige : environ 300 m sous l'isotherme 0 °C, la règle des prévisionnistes ; plus bas si l'air est sec ou s'il tombe fort"],
   [smp('<path d="M2 7h32" stroke="var(--ink)" stroke-width="1.6"/>'), "l'altitude du lieu : si elle passe au-dessus de la limite pluie-neige, ce qui tombe ici est de la neige (barres bleu clair)"],
@@ -2030,7 +2146,7 @@ const GUIDE = [
     <p>L'app ne retouche rien et dit d'où vient chaque chiffre. Quand les modèles hésitent, elle le montre : indice de confiance, plage des 51 scénarios, modèles comparés.</p>
     <p>Au téléphone, la barre du bas mène aux six écrans : <b>Aujourd'hui</b>, <b>15 jours</b>, <b>Gel</b>, <b>Soleil</b>, <b>Fiabilité</b> et <b>Explorer</b>. Au bureau, tout tient sur une page en deux colonnes. Sur chaque carte, le bouton <b>?</b> à côté du titre explique comment la lire : ce guide les rassemble.</p>` },
   { id: 'lieu', t: 'Choisir un lieu', html: `<ul class="gl">
-    <li>Touchez le <b>nom du lieu</b> en haut de l'écran, puis cherchez une commune, un code postal, ou un <b>sommet, un col, un refuge</b> (noms de l'IGN).</li>
+    <li>Touchez le <b>nom du lieu</b> en haut de l'écran, puis cherchez une commune, un code postal, ou un <b>sommet, un col, un refuge</b> (noms de l'IGN, avec leur altitude : celle de Wikipédia, sinon le point le plus haut du relief IGN).</li>
     <li><b>Utiliser ma position</b> prend la commune où vous êtes.</li>
     <li>L'<b>étoile</b> garde le lieu en favori : il apparaît en puce sous le nom. Balayez l'en-tête vers la gauche ou la droite pour passer d'un favori à l'autre.</li>
     <li>L'adresse de la page contient le lieu : partager le lien, c'est partager la météo de ce lieu.</li></ul>` },
