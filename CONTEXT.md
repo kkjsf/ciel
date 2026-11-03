@@ -35,6 +35,13 @@ page). Pensée téléphone d'abord, deux colonnes au-delà de 920 px.
   expliqué, humidité en jauge + point de rosée, UV en échelle 11 cases, qualité de l'air en échelle
   6 niveaux, pollens (3 premiers, 4 niveaux), pression + courbe des 24 h, écart avec hier, pluie sur
   24 h en barres, **normales du jour et records du mois** de la station Météo-France.
+- **Montagne** (v8, écran Aujourd'hui, seulement pour un sommet / col / refuge choisi dans la recherche
+  ou un lieu au-dessus de 800 m) : altitude de la prévision (modifiable), graphique 4 jours de
+  l'isotherme 0 °C, de la limite pluie-neige et de l'altitude du lieu, pluie ou neige ici, orages
+  possibles ; puis un résumé par jour (mini / maxi ici, iso 0, vent en altitude, neige dès X m, orages).
+- **Bilan du mois** (v8, écran 15 jours) : mois en cours jusqu'à hier, ou mois dernier (bascule) :
+  pluie et % de la normale, maxi et mini moyens et leur écart, cumul de pluie face à la normale,
+  pluie par jour, une case par jour colorée selon l'écart de température, faits du mois.
 - **Explorer un jour** (v5, 6e onglet) : un lieu et une date au choix de 1940 à J+14, graphique
   horaire, mini / maxi avec écart aux normales, pluie, rafales, ressenti, humidité, records, source.
 - **Sources et fiabilité** : chaque modèle, sa couverture réelle, l'heure de son run et de sa
@@ -56,6 +63,9 @@ ouvertes de Météo-France (Licence Ouverte Etalab) et de l'ECMWF (CC BY 4.0).
 | normales 1991-2020, records | fiches climatologiques Météo-France (station la plus proche) | `normales/` précalculé |
 | Explorer : passé depuis l'automne 2022 | archives des prévisions AROME / ARPEGE / ECMWF | historical-forecast-api |
 | Explorer : avant | réanalyse ERA5 (Copernicus / ECMWF), depuis 1940 | archive-api |
+| Montagne (v8) : iso 0, vent en altitude, CAPE | niveaux de pression 1000 à 500 hPa d'AROME 2,5 km puis d'ARPEGE (AROME 1,5 km n'en a pas, ECMWF IFS non plus chez Open-Meteo) | forecast, `models=meteofrance_arome_france0025,meteofrance_arpege_europe` |
+| Bilan du mois (v8) | archives des prévisions à courte échéance (`best_match`, Météo-France en France) ; repli : `past_days=62` de l'API de prévision | historical-forecast-api, daily |
+| sommets, cols, refuges (v8) | index des lieux IGN (BD TOPO), altitude au point par l'altimétrie IGN | `data.geopf.fr/geocodage` (`index=poi`), `data.geopf.fr/altimetrie` |
 
 **Fusion** : pour chaque heure et chaque variable, la première valeur non nulle dans l'ordre
 AROME HD > AROME 2,5 > ARPEGE > ECMWF. La source d'une heure = le modèle qui a fourni sa
@@ -179,7 +189,40 @@ tuiles 23 px ; en-tête 72 px ; textes des courbes 10 -> 11,5 px. Vérifié en 3
 1280 px clair, aucune erreur console, **aucun chevauchement** de texte mesuré par `getBBox` sur les
 16 graphiques horaires (48 h + les 15 détails de jour).
 
-**Statut : v7 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
+**v8 (2026-11-03)** : demande de Simon après la v7 (« la 2 et la 4 » de la liste d'idées, plus un
+manuel). Trois ajouts :
+- **Mode montagne.** La recherche de lieu interroge aussi l'**index des lieux de l'IGN** (CORS ouvert,
+  sans clé) : catégorie « élément topographique ou forestier » (sommets, pics, cols, crêtes...) et
+  catégorie « refuge » ; altitude de chaque résultat par l'**altimétrie IGN** en un seul appel
+  (plusieurs points séparés par `|`). Un lieu porte alors `alt` (et `kind`, `town` une fois la commune
+  trouvée par `geo.api.gouv.fr`, en tâche de fond après le chargement) ; `alt` entre dans `placeId`
+  (`lat,lon@alt`) et dans l'URL (`a=`, `k=`, `t=`). Les requêtes forecast et ensemble ajoutent
+  `&elevation=<alt>` : Open-Meteo recalcule la température à cette altitude, donc toute l'app (en-tête,
+  heure par heure, gel, normales avec la station choisie à altitude proche) passe au sommet. Carte
+  **Montagne** si `alt` est fixée ou si l'altitude du modèle de terrain dépasse 800 m
+  (`MOUNTAIN_FROM`), avec une requête de plus : 12 niveaux de pression (température, géopotentiel,
+  vent) + CAPE, ~40 Ko. **Iso 0** = interpolation au-dessus du dernier niveau encore positif ;
+  **limite pluie-neige** = iso 0 - 300 m (règle des prévisionnistes, `SNOW_GAP`) ; **vent en
+  altitude** = niveau dont le géopotentiel est le plus proche de l'altitude ; **orage** = code météo
+  95-99, ou CAPE >= 1000 J/kg avec au moins 0,2 mm, ou CAPE >= 2000. Altitude modifiable dans la carte
+  (`altUser`).
+- **Bilan du mois** : requête quotidienne séparée, faite après l'affichage et gardée dans le cache du
+  lieu pour la journée (`data.month.day`) ; carte cachée tant qu'elle n'a pas répondu. Normale de pluie
+  = normale mensuelle de la station au prorata des jours écoulés ; normales de température jour par
+  jour (série de Fourier). En montagne la station est souvent plus basse : la carte le dit (« comparaison
+  indicative »).
+- **Guide d'utilisation** : boîte de dialogue plein écran (bouton livre en haut à droite de l'en-tête,
+  bouton « Guide » en pied de page, lien « Tout le guide » au bas de chaque bulle « ? »). Il est
+  **construit à partir des textes `HELP` des bulles** (objet `GUIDE` : 11 sections, intro + parties qui
+  reprennent `HELP[clé]`), donc une bulle mise à jour met le guide à jour. Sommaire en puces,
+  saut direct à la section de la bulle d'où l'on vient.
+
+Vérifié en local : Pic du Midi d'Ossau (2 847 m), refuge des Sarradets (2 577 m), Font-Romeu (1 842 m,
+puis altitude changée à 2 500 m), Toulouse (pas de carte Montagne, octobre : 37,7 mm, 69 % de la
+normale), téléphone sombre et bureau clair, aucun chevauchement de texte dans les deux nouveaux
+graphiques (`getBBox`).
+
+**Statut : v8 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
 branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
 Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
 ceux de Harmonic Atlas et Chess Analyst (non touchés). Pas encore vérifié en ligne avec des données
@@ -196,6 +239,21 @@ sans `-I` : PIL est dans le site-packages de l'utilisateur).
 
 ## Pièges rencontrés
 
+- **Recherche IGN stricte sur les mots** : « refuge brèche » ne trouve rien alors que « brèche de
+  roland » trouve le refuge. Comme la catégorie `refuge` est déjà filtrée, le mot « refuge » est retiré
+  de la requête de cette catégorie. Le « Canigou » seul ne remonte le pic qu'avec le filtre de
+  catégorie (sans filtre, 40 lotissements et résidences passent devant).
+- **Altitude IGN au point du nom, pas au sommet** : Pic du Midi d'Ossau 2 847 m au lieu de 2 884 m,
+  Canigou 2 761 m au lieu de 2 784 m (le point du toponyme est à côté du sommet ; chercher le maximum
+  autour ne change rien). La BD TOPO n'a pas de Z sur ses détails orographiques. D'où l'altitude
+  modifiable dans la carte.
+- **`historical-forecast-api` en 503** pendant les tests du 2026-11-03 (et `meteofrance_seamless` qui
+  y dépasse le délai) : le bilan du mois se replie sur `past_days=62` de l'API de prévision.
+- **Encore `display` contre `hidden`** : `.mt-form { display: flex }` affichait le formulaire caché ;
+  il faut `.mt-form[hidden] { display: none }`, et `.card[hidden] { display: none !important }` pour
+  les cartes, que les règles `[data-view]` du téléphone remettent en `block`.
+- **Python dans un heredoc du Bash de Claude Code** : `\b` y est arrivé en octet 0x08 dans une regex
+  JS (le piège déjà noté dans Chess Analyst). Vérifier `grep -c $'\x08' index.html` après un patch.
 - **Vérifier les chevauchements par le calcul** : après un changement de taille de police dans un
   SVG, comparer deux à deux les `getBBox()` des `<text>` de chaque graphique (les détails de jour
   ouverts compris). En v7 ça a trouvé 1 à 2 px de recouvrement vent / rafales et pluie / proba,
