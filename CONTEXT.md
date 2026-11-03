@@ -228,7 +228,7 @@ inversé : d'abord `past_days=62` de l'API de prévision (0,3 s), l'archive seul
 du mois précédent (fin de mois long), avec un délai maximal de 15 s (`getJSON(url, tries, ms)` accepte
 désormais un délai, `AbortSignal.timeout`).
 
-**Statut : v9 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
+**Statut : v9 en ligne** (`bc7b60c`, vérifiée en ligne le 2026-11-03 avec données réelles) (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
 branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
 Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
 ceux de Harmonic Atlas et Chess Analyst (non touchés). Pas encore vérifié en ligne avec des données
