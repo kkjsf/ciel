@@ -499,8 +499,8 @@ a { color: var(--accent); }
 
 <script>
 'use strict';
-const APP_VERSION = '8';
-const APP_BUILT = '03/11/2026 11h16';
+const APP_VERSION = '9';
+const APP_BUILT = '03/11/2026 11h25';
 const TZ = 'Europe/Paris';
 const HOUR = 3600e3, DAY = 864e5;
 const DEFAULT_PLACE = { name: 'Toulouse', lat: 43.6045, lon: 1.4442, cp: '31000', dep: 'Haute-Garonne' };
@@ -717,10 +717,10 @@ function sky(code, night, twilight) {
 
 /* ---------- donnees ---------- */
 // Open-Meteo repond parfois 503 « service overloaded » quelques minutes : on retente avant d'abandonner
-async function getJSON(url, tries = 1) {
+async function getJSON(url, tries = 1, ms = 0) {
   for (let k = 1; ; k++) {
     try {
-      const r = await fetch(url);
+      const r = await fetch(url, ms ? { signal: AbortSignal.timeout(ms) } : undefined);
       if (r.ok) return r.json();
       if (r.status < 500 || k >= tries) throw Object.assign(new Error(`HTTP ${r.status}`), { status: r.status, final: true });
     } catch (e) {
@@ -736,7 +736,7 @@ function urls(p) {
   return {
     alt: `https://api.open-meteo.com/v1/forecast?${loc}${el}&forecast_days=4&hourly=${ALT_VARS}&models=${ALT_MODELS}`,
     month: (from, to) => `https://historical-forecast-api.open-meteo.com/v1/forecast?${loc}${el}&start_date=${from}&end_date=${to}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum`,
-    // repli si l'archive est surchargee : les 62 derniers jours gardes par l'API de prevision
+    // les 62 derniers jours gardes par l'API de prevision (rapide) ; l'archive seulement s'il manque des jours
     past: `https://api.open-meteo.com/v1/forecast?${loc}${el}&past_days=62&forecast_days=1&daily=temperature_2m_max,temperature_2m_min,precipitation_sum`,
     fc: `https://api.open-meteo.com/v1/forecast?${loc}${el}&past_days=1&forecast_days=16&hourly=${HOURLY}`
       + `&minutely_15=precipitation,temperature_2m&past_minutely_15=4&forecast_minutely_15=12&models=${MODELS.map(m => m.id)}`,
@@ -1578,7 +1578,11 @@ function renderMonth(D) {
 async function loadMonth(p) {
   const today = dayKey(Date.now());
   try {
-    const u = urls(p), r = await getJSON(u.month(monthStart(today, 1), addDays(today, -1)), 2).catch(() => getJSON(u.past, 2));
+    const u = urls(p), first = monthStart(today, 1);
+    let r = await getJSON(u.past, 2).catch(() => null);
+    const have = r ? r.daily.time.filter((t, i) => { const k = dayKey(t * 1000); return k >= first && k < today && r.daily.temperature_2m_max[i] != null; }).length : 0;
+    if (have < Math.round((keyTime(today) - keyTime(first)) / DAY)) r = await getJSON(u.month(first, addDays(today, -1)), 1, 15000).catch(() => r);
+    if (!r) return;
     if (placeId(state.place) !== placeId(p) || !state.data) return;
     state.data.month = { day: today, daily: r.daily };
     cacheData(p, state.data);

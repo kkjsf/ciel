@@ -189,7 +189,7 @@ tuiles 23 px ; en-tête 72 px ; textes des courbes 10 -> 11,5 px. Vérifié en 3
 1280 px clair, aucune erreur console, **aucun chevauchement** de texte mesuré par `getBBox` sur les
 16 graphiques horaires (48 h + les 15 détails de jour).
 
-**v8 (2026-11-03)** : demande de Simon après la v7 (« la 2 et la 4 » de la liste d'idées, plus un
+**v8 (2026-11-03, `0bf3291`, en ligne) puis v9 (même jour)** : demande de Simon après la v7 (« la 2 et la 4 » de la liste d'idées, plus un
 manuel). Trois ajouts :
 - **Mode montagne.** La recherche de lieu interroge aussi l'**index des lieux de l'IGN** (CORS ouvert,
   sans clé) : catégorie « élément topographique ou forestier » (sommets, pics, cols, crêtes...) et
@@ -222,7 +222,13 @@ puis altitude changée à 2 500 m), Toulouse (pas de carte Montagne, octobre : 3
 normale), téléphone sombre et bureau clair, aucun chevauchement de texte dans les deux nouveaux
 graphiques (`getBBox`).
 
-**Statut : v8 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
+**v9 (2026-11-03)** : correctif de la v8, vu en ligne. L'archive `historical-forecast-api` répondait 200 mais en
+**38 s** (surchargée), donc le repli ne servait à rien et le bilan du mois mettait 40 s à apparaître. Ordre
+inversé : d'abord `past_days=62` de l'API de prévision (0,3 s), l'archive seulement s'il manque des jours
+du mois précédent (fin de mois long), avec un délai maximal de 15 s (`getJSON(url, tries, ms)` accepte
+désormais un délai, `AbortSignal.timeout`).
+
+**Statut : v9 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
 branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
 Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
 ceux de Harmonic Atlas et Chess Analyst (non touchés). Pas encore vérifié en ligne avec des données
@@ -247,8 +253,9 @@ sans `-I` : PIL est dans le site-packages de l'utilisateur).
   Canigou 2 761 m au lieu de 2 784 m (le point du toponyme est à côté du sommet ; chercher le maximum
   autour ne change rien). La BD TOPO n'a pas de Z sur ses détails orographiques. D'où l'altitude
   modifiable dans la carte.
-- **`historical-forecast-api` en 503** pendant les tests du 2026-11-03 (et `meteofrance_seamless` qui
-  y dépasse le délai) : le bilan du mois se replie sur `past_days=62` de l'API de prévision.
+- **`historical-forecast-api` lente ou en 503** pendant les tests du 2026-11-03 (jusqu'à 38 s pour une
+  réponse 200, et `meteofrance_seamless` qui y dépasse le délai) : le bilan du mois lit d'abord
+  `past_days=62` de l'API de prévision et n'appelle l'archive, avec un délai de 15 s, que s'il manque des jours.
 - **Encore `display` contre `hidden`** : `.mt-form { display: flex }` affichait le formulaire caché ;
   il faut `.mt-form[hidden] { display: none }`, et `.card[hidden] { display: none !important }` pour
   les cartes, que les règles `[data-view]` du téléphone remettent en `block`.
