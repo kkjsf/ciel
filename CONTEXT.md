@@ -9,7 +9,7 @@ Une PWA **une seule page** (`index.html`, ~120 Ko en v5, vanilla JS, zéro build
 `manifest.json` + `icons/` + `normales/` (données précalculées, v5). Interface en français, thème clair / sombre (auto, ou forcé en pied de
 page). Pensée téléphone d'abord, deux colonnes au-delà de 920 px.
 
-Écran, de haut en bas :
+Écran, de haut en bas (chaque carte a une bulle **« ? »** à côté de son titre qui explique comment la lire, v7) :
 - **En-tête** au dégradé de ciel (change selon le temps, la nuit, l'aube et le crépuscule) : lieu,
   favoris en puces, température actuelle (AROME au quart d'heure, interpolée à la minute),
   ressenti, mini / maxi du jour, une phrase de synthèse (pluie à venir, rafales, gel cette nuit,
@@ -123,7 +123,7 @@ partagée avec Harmonic Atlas et Chess Analyst, cf. le bug corrigé en v297 de C
 **v2 (2026-11-02, choix de Simon sur la maquette)** : au téléphone, **barre de navigation en bas**
 (variante A : Aujourd'hui, 15 jours, Gel, Soleil, Fiabilité ; un écran par onglet, mini-barre du lieu
 en haut des autres écrans, `show(k)` + règles CSS `[data-view]` sous 920 px) ; au bureau, deux colonnes
-sans barre. Nouvelles cartes portées du prototype : **Meilleur créneau pour sortir**, **15 jours en
+sans barre. Nouvelles cartes portées du prototype : **Meilleur créneau pour sortir** (retiré en v7), **15 jours en
 courbe** (bascule Liste / Courbe), **Les modèles sont-ils d'accord ?** **Balayage horizontal sur
 l'en-tête** entre les lieux enregistrés (points cliquables sous l'en-tête). **Thème sombre par
 défaut** (cycle sombre > clair > auto). **Alerte gel** : bouton dans la carte Gel ; `periodicSync`
@@ -161,7 +161,25 @@ gauche affiche désormais les **pictos des tuiles** (parapluie, vent, thermomèt
 couleur) au lieu de mots, et les trois lignes du bas sont plus espacées (ressenti, humidité, UV).
 Vérifié en 375 px, y compris avec le texte du graphique agrandi de 30 %.
 
-**Statut : v6 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
+**v7 (2026-11-03, en ligne)** : demande de Simon, alléger l'interface. Le module **« Meilleur créneau
+pour sortir » est retiré** (jugé pas utile : carte, CSS `.acts` / `.slot-*` / `.tl-*`, `ACTIVITIES`,
+`hourScore`, `renderSlot`). Les **notes et légendes sous les cartes** (« lignes du bas, de haut en bas »,
+lecture des 15 jours, légende et note du gel, note des modèles, première note des sources) passent dans
+une **bulle « ? »** placée à côté du titre de chaque carte, y compris En ce moment, Soleil et Explorer
+qui n'en avaient pas. Une seule bulle partagée (`#helpPop`), textes dans l'objet `HELP`, bouton injecté
+dans le `.h2-t` de chaque `section[data-help]` ; positionnée en absolu à sa place naturelle sous le titre
+(par-dessus la carte, sans décaler la page), fermée par un clic ailleurs, Échap ou un changement
+d'onglet (`show()` appelle `closeHelp()`, d'où ce code placé avant `show('today')`). La mention des
+licences reste visible sous les sources (attribution CC BY). La place gagnée sert à **grossir les
+chiffres** : heure par heure température 13,5 -> 16 px, pluie, vent, ressenti 11-11,5 -> 13-13,5 px,
+humidité 12,5, UV 11,5 (lignes redescendues : courbe 92-122, pluie au pied 170, vent 213 / 236 / 251,
+ressenti 278, humidité 301, UV 310-326, `dy` 50 sans pluie) ; 15 jours mini / maxi en 17 px (colonnes
+38 px, pluie 50 px, cumul arrondi au mm dès 10 mm pour tenir sur une ligne) ; nuits de gel 18 px ;
+tuiles 23 px ; en-tête 72 px ; textes des courbes 10 -> 11,5 px. Vérifié en 375 px sombre et
+1280 px clair, aucune erreur console, **aucun chevauchement** de texte mesuré par `getBBox` sur les
+16 graphiques horaires (48 h + les 15 détails de jour).
+
+**Statut : v7 en ligne** (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
 branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
 Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
 ceux de Harmonic Atlas et Chess Analyst (non touchés). Pas encore vérifié en ligne avec des données
@@ -178,6 +196,10 @@ sans `-I` : PIL est dans le site-packages de l'utilisateur).
 
 ## Pièges rencontrés
 
+- **Vérifier les chevauchements par le calcul** : après un changement de taille de police dans un
+  SVG, comparer deux à deux les `getBBox()` des `<text>` de chaque graphique (les détails de jour
+  ouverts compris). En v7 ça a trouvé 1 à 2 px de recouvrement vent / rafales et pluie / proba,
+  invisibles sur une capture.
 - **Pas de texte dans une colonne SVG de largeur fixe** : au téléphone, les mots débordent ou se
   chevauchent dès que la police est plus large ou agrandie (v5 -> v6). Des pictos de taille fixe ne
   bougent pas.

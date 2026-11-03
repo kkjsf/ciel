@@ -21,7 +21,7 @@
   --chip: #eef2f7; --accent: #2563b0; --rain: #2f7fe0; --snow: #8fb0d6; --warn: #d9822b;
   --sun: #f5a524; --moon: #e8dca8; --cl: #d3dbe4; --cl2: #a7b4c4; --ol: #b3bfcc; --drop: #3b8ced; --flake: #7aa7d9;
   --night: rgba(40, 70, 130, .07); --shadow: 0 1px 2px rgba(20, 32, 51, .05), 0 6px 20px rgba(20, 32, 51, .06);
-  --f0: transparent; --f1: #d4e7fa; --f2: #9ccaf3; --f3: #5aa2ec; --f4: #3653b8; --f3ink: #fff;
+  --f0: transparent; --f1: #d4e7fa; --f2: #9ccaf3; --f3: #5aa2ec; --f4: #3653b8; --f3ink: #fff; --pop: #fff;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -30,7 +30,7 @@
     --chip: #1b2533; --accent: #6aa5ec; --rain: #5aa2f5; --snow: #a9c4e4;
     --cl: #b4c0ce; --cl2: #7d8da2; --ol: transparent; --drop: #6fb2ff; --flake: #b9d4f2;
     --night: rgba(0, 0, 0, .22); --shadow: none;
-    --f1: #1d3550; --f2: #2a5686; --f3: #3f86d6; --f4: #6f8cf0;
+    --f1: #1d3550; --f2: #2a5686; --f3: #3f86d6; --f4: #6f8cf0; --pop: #1d2735;
     color-scheme: dark;
   }
 }
@@ -39,7 +39,7 @@
   --chip: #1b2533; --accent: #6aa5ec; --rain: #5aa2f5; --snow: #a9c4e4;
   --cl: #b4c0ce; --cl2: #7d8da2; --ol: transparent; --drop: #6fb2ff; --flake: #b9d4f2;
   --night: rgba(0, 0, 0, .22); --shadow: none;
-  --f1: #1d3550; --f2: #2a5686; --f3: #3f86d6; --f4: #6f8cf0;
+  --f1: #1d3550; --f2: #2a5686; --f3: #3f86d6; --f4: #6f8cf0; --pop: #1d2735;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -83,10 +83,10 @@ a { color: var(--accent); }
 .favs button[aria-current="true"] { background: rgba(255, 255, 255, .32); font-weight: 600; }
 .now { display: flex; align-items: center; gap: 14px; margin: 14px 0 6px; }
 .now .ico { width: 84px; height: 84px; flex: none; }
-.now .temp { font-size: 64px; font-weight: 300; line-height: 1; letter-spacing: -2px; }
+.now .temp { font-size: 72px; font-weight: 300; line-height: 1; letter-spacing: -2px; }
 .now .cond { font-size: 18px; font-weight: 600; }
-.now .feel { font-size: 13.5px; opacity: .85; }
-.summary { margin: 8px 0 0; font-size: 15px; line-height: 1.45; }
+.now .feel { font-size: 15px; opacity: .88; }
+.summary { margin: 8px 0 0; font-size: 16px; line-height: 1.45; }
 .nowcast { margin-top: 12px; background: rgba(255, 255, 255, .12); border-radius: 14px; padding: 10px 12px; }
 .nowcast .nc-t { font-size: 13.5px; font-weight: 600; }
 .nc-bars { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; align-items: end; height: 26px; margin-top: 8px; }
@@ -121,31 +121,31 @@ a { color: var(--accent); }
 .hscroll { overflow-x: auto; margin: 0 -16px; padding: 0 16px 4px; scrollbar-width: thin; overscroll-behavior-x: contain; }
 .hsvg { display: block; }
 .hsvg text { fill: var(--ink); font-size: 12px; }
-.hsvg .hl { fill: var(--muted); font-size: 12px; }
-.hsvg .dl { fill: var(--ink); font-size: 11.5px; font-weight: 650; }
-.hsvg .tl { font-size: 13.5px; font-weight: 600; }
-.hsvg .rl { fill: var(--rain); font-size: 11px; font-weight: 600; }
-.hsvg .pl { fill: var(--faint); font-size: 10px; }
-.hsvg .wl { fill: var(--muted); font-size: 11.5px; }
-.hsvg .gl { fill: var(--faint); font-size: 10px; }
+.hsvg .hl { fill: var(--muted); font-size: 13px; }
+.hsvg .dl { fill: var(--ink); font-size: 12.5px; font-weight: 650; }
+.hsvg .tl { font-size: 16px; font-weight: 650; }
+.hsvg .rl { fill: var(--rain); font-size: 13px; font-weight: 650; }
+.hsvg .pl { fill: var(--faint); font-size: 11px; }
+.hsvg .wl { fill: var(--muted); font-size: 13px; }
+.hsvg .gl { fill: var(--faint); font-size: 11px; }
 .hsvg .gl.hi { fill: var(--warn); font-weight: 650; }
 
 /* days */
 .day {
-  display: grid; grid-template-columns: 62px 34px 46px 30px minmax(40px, 1fr) 30px; align-items: center; gap: 6px;
-  width: 100%; padding: 7px 0; border: 0; border-top: 1px solid var(--line); background: none; text-align: left; cursor: pointer;
+  display: grid; grid-template-columns: 62px 34px 50px 38px minmax(40px, 1fr) 38px; align-items: center; gap: 6px;
+  width: 100%; padding: 8px 0; border: 0; border-top: 1px solid var(--line); background: none; text-align: left; cursor: pointer;
 }
 .day:first-child { border-top: 0; }
 .day:hover { background: linear-gradient(90deg, transparent, var(--chip), transparent); }
-.d-name b { display: block; font-weight: 600; font-size: 14.5px; }
+.d-name b { display: block; font-weight: 600; font-size: 15.5px; }
 .dots { display: flex; gap: 2px; margin-top: 3px; }
 .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--line); }
 .dots i.on { background: var(--accent); }
 .dots.c1 i.on, .dots.c2 i.on { background: var(--warn); }
-.d-rain { font-size: 12px; color: var(--rain); line-height: 1.2; font-weight: 600; }
+.d-rain { font-size: 13px; color: var(--rain); line-height: 1.2; font-weight: 600; }
 .d-rain small { display: block; font-weight: 400; color: var(--faint); }
-.d-min { text-align: right; color: var(--muted); }
-.d-max { font-weight: 650; }
+.d-min { text-align: right; color: var(--muted); font-size: 17px; }
+.d-max { font-weight: 650; font-size: 17px; }
 .d-bar { position: relative; height: 6px; border-radius: 3px; background: var(--chip); }
 .d-bar s { position: absolute; top: -3px; bottom: -3px; border-radius: 6px; background: var(--line); opacity: .9; }
 .d-bar i { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
@@ -153,17 +153,17 @@ a { color: var(--accent); }
 .sep { font-size: 12px; color: var(--faint); padding: 9px 0 5px; border-top: 1px dashed var(--line); }
 .day-detail { padding: 4px 0 12px; }
 .day-detail .dd-h { font-weight: 650; margin: 2px 0 8px; }
-.day-detail ul { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
+.day-detail ul { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
 .day-detail li { margin: 2px 0; }
 
 /* frost */
-.headline { font-size: 15.5px; font-weight: 600; margin: 0 0 12px; display: flex; gap: 10px; align-items: center; }
+.headline { font-size: 16px; font-weight: 600; margin: 0 0 12px; display: flex; gap: 10px; align-items: center; }
 .headline .badge { flex: none; width: 12px; height: 12px; border-radius: 50%; }
-.nights { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(42px, 1fr); gap: 4px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 4px; }
+.nights { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(46px, 1fr); gap: 4px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 4px; }
 .night { text-align: center; border-radius: 12px; padding: 6px 2px 5px; border: 1px solid var(--line); }
-.night .n-d { display: block; font-size: 11px; color: var(--muted); }
-.night b { display: block; font-size: 15px; margin: 2px 0 1px; }
-.night .n-p { display: block; font-size: 10.5px; color: var(--muted); min-height: 14px; }
+.night .n-d { display: block; font-size: 12px; color: var(--muted); }
+.night b { display: block; font-size: 18px; margin: 2px 0 1px; }
+.night .n-p { display: block; font-size: 11.5px; color: var(--muted); min-height: 14px; }
 .night.f1 { background: var(--f1); border-color: var(--f1); }
 .night.f2 { background: var(--f2); border-color: var(--f2); }
 .night.f3 { background: var(--f3); border-color: var(--f3); color: var(--f3ink); }
@@ -178,10 +178,10 @@ a { color: var(--accent); }
 .sun-arc text { fill: var(--muted); font-size: 12px; }
 .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin-top: 10px; }
 .kv div { font-size: 13px; color: var(--muted); }
-.kv b { display: block; color: var(--ink); font-size: 16px; font-weight: 600; }
+.kv b { display: block; color: var(--ink); font-size: 18px; font-weight: 600; }
 .moon { display: flex; gap: 14px; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
 .moon svg { flex: none; }
-.moon b { display: block; font-size: 15px; }
+.moon b { display: block; font-size: 16px; }
 .moon span { font-size: 13px; color: var(--muted); }
 
 /* details */
@@ -272,29 +272,14 @@ a { color: var(--accent); }
 .seg { display: inline-flex; background: var(--chip); border-radius: 99px; padding: 2px; }
 .seg button { border: 0; background: none; font-size: 12px; padding: 4px 11px; border-radius: 99px; color: var(--muted); cursor: pointer; text-transform: none; letter-spacing: 0; }
 .seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, .14); }
-.acts { display: flex; gap: 6px; margin-bottom: 12px; }
-.acts button { border: 1px solid var(--line); background: none; border-radius: 99px; padding: 5px 12px; font-size: 13px; cursor: pointer; color: var(--muted); }
-.acts button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-.slot-best { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.slot-best b { font-size: 19px; }
-.slot-best span { font-size: 12px; font-weight: 650; padding: 2px 8px; border-radius: 99px; color: #0f3d22; }
-.slot-facts { color: var(--muted); font-size: 13.5px; margin: 2px 0 12px; }
-.tl-wrap { position: relative; }
-.tl { display: flex; gap: 1px; height: 24px; }
-.tl i { flex: 1; border-radius: 2px; background: var(--chip); }
-.tl i.n { background: color-mix(in srgb, var(--ink) 16%, transparent); }
-.tl i.w { background: repeating-linear-gradient(135deg, var(--rain) 0 2px, transparent 2px 5px); opacity: .55; }
-.tl-best { position: absolute; top: -4px; bottom: -4px; border: 2.5px solid var(--ink); border-radius: 6px; pointer-events: none; }
-.tl-lab { position: relative; height: 16px; font-size: 11px; color: var(--muted); margin-top: 4px; }
-.tl-lab span { position: absolute; white-space: nowrap; }
 .mchart, .dchart { display: block; width: 100%; height: auto; max-width: 560px; margin: 0 auto; }
-.mchart text, .dchart text { fill: var(--muted); font-size: 10px; }
+.mchart text, .dchart text { fill: var(--muted); font-size: 11.5px; }
 .dchart .vmax { fill: var(--ink); font-weight: 650; }
 .mleg { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; margin: 8px 0 4px; }
 .mleg span { display: inline-flex; align-items: center; gap: 6px; }
 .mleg i { width: 16px; height: 3px; border-radius: 2px; display: inline-block; }
 .verdict { font-size: 15px; font-weight: 600; margin: 0 0 10px; }
-.rtab { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 10px; }
+.rtab { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 10px; }
 .rtab th, .rtab td { padding: 5px 4px; text-align: right; border-top: 1px solid var(--line); }
 .rtab th:first-child, .rtab td:first-child { text-align: left; }
 .rtab th { color: var(--muted); font-weight: 600; border-top: 0; }
@@ -306,7 +291,7 @@ a { color: var(--accent); }
 .alert button.ghost { background: var(--chip); color: var(--ink); }
 
 /* ---------- v5 : normales, ressenti / humidite / UV par heure, en ce moment illustre, explorateur ---------- */
-.an { display: block; font-size: 10.5px; font-weight: 650; color: var(--faint); line-height: 1.15; }
+.an { display: block; font-size: 11.5px; font-weight: 650; color: var(--faint); line-height: 1.15; }
 .an.hot { color: #e0782f; } .an.hot2 { color: #dc4a32; } .an.cold { color: #3d8fe0; } .an.cold2 { color: #6a74ee; }
 .norm-pill { display: inline-flex; align-items: center; gap: 6px; margin-top: 7px; font-size: 12.5px; font-weight: 600; padding: 3px 11px 3px 8px; border-radius: 99px; background: rgba(255, 255, 255, .16); }
 .norm-pill i { width: 9px; height: 9px; border-radius: 50%; background: #fff; }
@@ -314,13 +299,13 @@ a { color: var(--accent); }
 .hwrap { display: flex; margin-right: -16px; }
 .hleg { flex: none; display: block; margin-left: -6px; }
 .hwrap .hscroll { flex: 1; min-width: 0; margin: 0; padding: 0 16px 4px 2px; }
-.hsvg .fl { font-size: 11.5px; font-weight: 600; }
-.hsvg .hu { fill: var(--muted); font-size: 11px; }
-.hsvg .uv { fill: #fff; font-size: 10.5px; font-weight: 700; }
+.hsvg .fl { font-size: 13.5px; font-weight: 650; }
+.hsvg .hu { fill: var(--muted); font-size: 12.5px; }
+.hsvg .uv { fill: #fff; font-size: 11.5px; font-weight: 700; }
 .tile { position: relative; padding: 10px 12px 11px; }
 .tile .k { display: flex; align-items: center; gap: 7px; }
 .tile .k svg { flex: none; width: 26px; height: 26px; padding: 4.5px; border-radius: 9px; box-sizing: border-box; color: var(--tc); background: color-mix(in srgb, var(--tc) 17%, transparent); }
-.tile .v { font-size: 21px; margin: 6px 0 1px; }
+.tile .v { font-size: 23px; margin: 6px 0 1px; }
 .tile .v small { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 4px; }
 .tile.wide { grid-column: 1 / -1; }
 .tile.compass .v, .tile.compass .s { padding-right: 46px; }
@@ -356,8 +341,36 @@ a { color: var(--accent); }
 .xp-head span { color: var(--muted); font-size: 13px; }
 .xp-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; margin: 0 0 12px; }
 .xp-facts div { background: var(--chip); border-radius: 12px; padding: 8px 10px; font-size: 12px; color: var(--muted); }
-.xp-facts b { display: block; color: var(--ink); font-size: 17px; font-weight: 650; }
+.xp-facts b { display: block; color: var(--ink); font-size: 19px; font-weight: 650; }
 .xp-facts .an { display: inline; margin-left: 4px; font-size: 12px; }
+
+/* ---------- v7 : aide "?" sur chaque carte, a la place des notes ---------- */
+.card { position: relative; }
+.h2-t { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.help {
+  position: relative; flex: none; width: 20px; height: 20px; padding: 0; display: grid; place-items: center;
+  border: 1.5px solid currentColor; border-radius: 50%; background: none; color: var(--faint); cursor: pointer;
+  font-size: 12px; font-weight: 700; line-height: 1; text-transform: none; letter-spacing: 0;
+}
+.help::after { content: ''; position: absolute; inset: -11px; }
+.help:hover { color: var(--accent); }
+.help[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.help-pop {
+  position: absolute; z-index: 20; left: 10px; right: 10px; max-width: 460px; margin-top: -4px; padding: 12px 14px;
+  border-radius: 14px; background: var(--pop); border: 1px solid var(--line); box-shadow: 0 12px 32px rgba(8, 16, 32, .28);
+  font-size: 13.5px; line-height: 1.5; color: var(--ink);
+}
+.help-pop p { margin: 0 0 7px; }
+.help-pop > :last-child { margin-bottom: 0; }
+.help-pop ul { margin: 0 0 8px; padding: 0; list-style: none; display: grid; gap: 7px; }
+.help-pop li { display: flex; gap: 10px; align-items: flex-start; }
+.help-pop .hs { flex: none; width: 22px; min-height: 21px; display: flex; align-items: center; justify-content: center; }
+.help-pop .hs svg { width: 19px; height: 19px; }
+.help-pop .wide .hs { width: 40px; }
+.help-pop .hs .d-bar { width: 38px; }
+.help-pop .hs .d-rain { text-align: center; font-size: 12px; }
+.help-pop .hs .an { font-size: 12.5px; }
+.help-pop .legend { margin: 0 0 9px; }
 </style>
 </head>
 <body>
@@ -385,21 +398,18 @@ a { color: var(--accent); }
   <div class="banner" id="banner" hidden></div>
   <div class="grid">
     <div class="col">
-      <section class="card" data-view="today"><h2>Heure par heure <span class="h2-note" id="hourlyNote"></span></h2><div id="hourly"></div>
-        <p class="note">Lignes du bas, de haut en bas : pluie en mm sur l'heure qui suit ; vent moyen et rafales en km/h (flèche = sens où va le vent) ; ressenti, la température que l'on perçoit avec le vent et l'humidité ; humidité ; UV (indice Copernicus, les 4 premiers jours).</p></section>
-      <section class="card" data-view="today"><h2>Meilleur créneau pour sortir</h2><div id="slot"></div></section>
-      <section class="card" data-view="days"><h2><span>15 jours</span>
+      <section class="card" data-view="today" data-help="hourly"><h2><span class="h2-t">Heure par heure</span><span class="h2-note" id="hourlyNote"></span></h2><div id="hourly"></div></section>
+      <section class="card" data-view="days" data-help="days"><h2><span class="h2-t">15 jours</span>
           <span class="seg" id="daysSeg"><button type="button" data-mode="liste" aria-pressed="true">Liste</button><button type="button" data-mode="courbe" aria-pressed="false">Courbe</button></span></h2>
-        <div id="days"></div><div id="daysChart" hidden></div>
-        <p class="note">Points sous le jour : indice de confiance sur 5, tiré de l'accord entre les 51 scénarios ECMWF. Barre ou zone grisée : plage des scénarios (10 % les plus froids à 10 % les plus chauds). Sous les températures : écart avec les normales 1991-2020 de Météo-France. Touchez un jour de la liste pour son détail.</p></section>
-      <section class="card" data-view="explore"><h2>Explorer un jour</h2><div id="explore"></div></section>
+        <div id="days"></div><div id="daysChart" hidden></div></section>
+      <section class="card" data-view="explore" data-help="explore"><h2><span class="h2-t">Explorer un jour</span></h2><div id="explore"></div></section>
     </div>
     <div class="col">
-      <section class="card" data-view="today"><h2>En ce moment</h2><div id="details"></div></section>
-      <section class="card" data-view="frost"><h2>Gel</h2><div id="frost"></div><div id="alert"></div></section>
-      <section class="card" data-view="sun"><h2>Soleil et lune</h2><div id="sun"></div></section>
-      <section class="card" data-view="trust"><h2>Les modèles sont-ils d'accord ?</h2><div id="models"></div></section>
-      <section class="card" data-view="trust"><h2>Sources et fiabilité</h2><div id="sources"></div></section>
+      <section class="card" data-view="today" data-help="details"><h2><span class="h2-t">En ce moment</span></h2><div id="details"></div></section>
+      <section class="card" data-view="frost" data-help="frost"><h2><span class="h2-t">Gel</span></h2><div id="frost"></div><div id="alert"></div></section>
+      <section class="card" data-view="sun" data-help="sun"><h2><span class="h2-t">Soleil et lune</span></h2><div id="sun"></div></section>
+      <section class="card" data-view="trust" data-help="models"><h2><span class="h2-t">Les modèles sont-ils d'accord ?</span></h2><div id="models"></div></section>
+      <section class="card" data-view="trust" data-help="sources"><h2><span class="h2-t">Sources et fiabilité</span></h2><div id="sources"></div></section>
     </div>
   </div>
   <footer class="foot" id="foot"></footer>
@@ -426,8 +436,8 @@ a { color: var(--accent); }
 
 <script>
 'use strict';
-const APP_VERSION = '6';
-const APP_BUILT = '02/11/2026 22h00';
+const APP_VERSION = '7';
+const APP_BUILT = '03/11/2026 10h52';
 const TZ = 'Europe/Paris';
 const HOUR = 3600e3, DAY = 864e5;
 const DEFAULT_PLACE = { name: 'Toulouse', lat: 43.6045, lon: 1.4442, cp: '31000', dep: 'Haute-Garonne' };
@@ -986,12 +996,12 @@ function hourlySvg(D, from, to, { step = 1, markNow = false, dayLabels = true } 
   const slotProb = i => { let p = null; for (let j = i + 1; j <= i + step; j++) if (H.precipitation_probability[j] != null) p = Math.max(p ?? 0, H.precipitation_probability[j]); return p; };
   const showProb = i => H.src[i] === 3 && (slotProb(i) ?? 0) >= 10;
   // sans pluie ni proba dans la plage, la bande pluie est repliee
-  const dy = cols.some(i => slotRain(i) >= 0.05 || showProb(i)) ? 0 : 44;
+  const dy = cols.some(i => slotRain(i) >= 0.05 || showProb(i)) ? 0 : 50;
   const hasUv = cols.some(i => (H.uv[i] ?? 0) >= 0.5);
-  const n = cols.length, width = n * W, height = (hasUv ? 318 : 296) - dy, uid = ++svgUid;
+  const n = cols.length, width = n * W, height = (hasUv ? 334 : 310) - dy, uid = ++svgUid;
   const temps = cols.map(i => H.temperature_2m[i]);
   const lo = Math.min(...temps), hi = Math.max(...temps), span = Math.max(hi - lo, 5);
-  const yT = v => 116 - (v - lo) / span * 32;
+  const yT = v => 122 - (v - lo) / span * 30;
   let s = `<svg class="hsvg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Prévision heure par heure">`;
   s += `<defs><linearGradient id="tg${uid}" gradientUnits="userSpaceOnUse" x1="0" x2="${width}" y1="0" y2="0">`
     + cols.map((i, k) => `<stop offset="${((k + .5) / n).toFixed(4)}" stop-color="${tc(H.temperature_2m[i])}"/>`).join('') + '</linearGradient></defs>';
@@ -1016,34 +1026,34 @@ function hourlySvg(D, from, to, { step = 1, markNow = false, dayLabels = true } 
   cols.forEach((i, k) => {
     const cx = k * W + W / 2, ts = H.t[i];
     const night = D.isNight(ts + step * HOUR / 2);
-    s += `<text class="hl" x="${cx}" y="32" text-anchor="middle">${k === 0 && markNow ? 'Maint.' : hourOf(ts) + 'h'}</text>`;
-    s += `<use href="#i-${iconFor(slotCode(i), night)}" x="${cx - 15}" y="37" width="30" height="30"/>`;
+    s += `<text class="hl" x="${cx}" y="33" text-anchor="middle">${k === 0 && markNow ? 'Maint.' : hourOf(ts) + 'h'}</text>`;
+    s += `<use href="#i-${iconFor(slotCode(i), night)}" x="${cx - 15}" y="38" width="30" height="30"/>`;
     s += `<circle cx="${cx}" cy="${pts[k][1].toFixed(1)}" r="3" fill="var(--card)" stroke="${tc(H.temperature_2m[i])}" stroke-width="2"/>`;
-    s += `<text class="tl" x="${cx}" y="${(pts[k][1] - 9).toFixed(1)}" text-anchor="middle">${deg(H.temperature_2m[i])}</text>`;
+    s += `<text class="tl" x="${cx}" y="${(pts[k][1] - 10).toFixed(1)}" text-anchor="middle">${deg(H.temperature_2m[i])}</text>`;
     const mm = slotRain(i), snow = slotSnow(i) > 0;
     if (!dy) {
       if (mm >= 0.05) {
         const bh = 3 + 27 * Math.min(1, Math.sqrt(mm / step / 6));
-        s += `<rect x="${cx - 9}" y="${(164 - bh).toFixed(1)}" width="18" height="${bh.toFixed(1)}" rx="3" fill="${snow ? 'var(--snow)' : 'var(--rain)'}" opacity=".85"/>`;
+        s += `<rect x="${cx - 9}" y="${(170 - bh).toFixed(1)}" width="18" height="${bh.toFixed(1)}" rx="3" fill="${snow ? 'var(--snow)' : 'var(--rain)'}" opacity=".85"/>`;
       }
-      s += `<line x1="${cx - 11}" x2="${cx + 11}" y1="164.5" y2="164.5" stroke="var(--line)"/>`;
-      if (mm >= 0.1) s += `<text class="rl" x="${cx}" y="178" text-anchor="middle">${num1(mm)}</text>`;
-      if (showProb(i)) s += `<text class="pl" x="${cx}" y="${mm >= 0.1 ? 189 : 178}" text-anchor="middle">${slotProb(i)} %</text>`;
+      s += `<line x1="${cx - 11}" x2="${cx + 11}" y1="170.5" y2="170.5" stroke="var(--line)"/>`;
+      if (mm >= 0.1) s += `<text class="rl" x="${cx}" y="185" text-anchor="middle">${num1(mm)}</text>`;
+      if (showProb(i)) s += `<text class="pl" x="${cx}" y="${mm >= 0.1 ? 200 : 185}" text-anchor="middle">${slotProb(i)} %</text>`;
     }
     const dir = H.wind_direction_10m[i], ws = H.wind_speed_10m[i], gu = H.wind_gusts_10m[i];
-    if (dir != null) s += `<g transform="translate(${cx} ${204 - dy}) rotate(${(dir + 180) % 360})"><path d="M0,-7 L5,5 L0,2 L-5,5Z" fill="var(--muted)"/></g>`;
-    if (ws != null) s += `<text class="wl" x="${cx}" y="${225 - dy}" text-anchor="middle">${Math.round(ws)}</text>`;
-    if (gu != null && gu >= 30) s += `<text class="gl${gu >= 50 ? ' hi' : ''}" x="${cx}" y="${236 - dy}" text-anchor="middle">r ${Math.round(gu)}</text>`;
+    if (dir != null) s += `<g transform="translate(${cx} ${213 - dy}) rotate(${(dir + 180) % 360})"><path d="M0,-7 L5,5 L0,2 L-5,5Z" fill="var(--muted)"/></g>`;
+    if (ws != null) s += `<text class="wl" x="${cx}" y="${236 - dy}" text-anchor="middle">${Math.round(ws)}</text>`;
+    if (gu != null && gu >= 30) s += `<text class="gl${gu >= 50 ? ' hi' : ''}" x="${cx}" y="${251 - dy}" text-anchor="middle">r ${Math.round(gu)}</text>`;
     const fl = H.apparent_temperature[i], hu = H.relative_humidity_2m[i], uv = H.uv[i];
-    if (fl != null) s += `<text class="fl" x="${cx}" y="${264 - dy}" text-anchor="middle" style="fill:${tc(fl)}">${deg(fl)}</text>`;
-    if (hu != null) s += `<text class="hu" x="${cx}" y="${287 - dy}" text-anchor="middle">${Math.round(hu)}%</text>`;
-    if (uv != null && uv >= 0.5) s += `<rect x="${cx - 11}" y="${296 - dy}" width="22" height="15" rx="7.5" fill="${UV(uv)[1]}"/><text class="uv" x="${cx}" y="${307.5 - dy}" text-anchor="middle">${Math.round(uv)}</text>`;
+    if (fl != null) s += `<text class="fl" x="${cx}" y="${278 - dy}" text-anchor="middle" style="fill:${tc(fl)}">${deg(fl)}</text>`;
+    if (hu != null) s += `<text class="hu" x="${cx}" y="${301 - dy}" text-anchor="middle">${Math.round(hu)}%</text>`;
+    if (uv != null && uv >= 0.5) s += `<rect x="${cx - 12}" y="${310 - dy}" width="24" height="16" rx="8" fill="${UV(uv)[1]}"/><text class="uv" x="${cx}" y="${322.5 - dy}" text-anchor="middle">${Math.round(uv)}</text>`;
   });
-  s += `<line x1="0" x2="${width}" y1="${243.5 - dy}" y2="${243.5 - dy}" stroke="var(--line)" stroke-dasharray="2 3"/>`;
+  s += `<line x1="0" x2="${width}" y1="${256.5 - dy}" y2="${256.5 - dy}" stroke="var(--line)" stroke-dasharray="2 3"/>`;
   // Libelles des lignes : les pictos des tuiles (pas de texte, qui deborderait avec un grand reglage de police)
-  const rows = [[dy ? null : 158, 'rain'], [214 - dy, 'wind'], [260 - dy, 'feel'], [283 - dy, 'hum'], [hasUv ? 303.5 - dy : null, 'uv']];
-  const leg = `<svg class="hleg" width="22" height="${height}" aria-hidden="true">${rows.filter(r => r[0] != null).map(([y, k]) =>
-    `<svg x="2" y="${y - 8}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${TCOL[k]}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${TI[k]}</svg>`).join('')}</svg>`;
+  const rows = [[dy ? null : 164, 'rain'], [224 - dy, 'wind'], [273 - dy, 'feel'], [296.5 - dy, 'hum'], [hasUv ? 318 - dy : null, 'uv']];
+  const leg = `<svg class="hleg" width="24" height="${height}" aria-hidden="true">${rows.filter(r => r[0] != null).map(([y, k]) =>
+    `<svg x="2" y="${y - 9}" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${TCOL[k]}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${TI[k]}</svg>`).join('')}</svg>`;
   return `<div class="hwrap">${leg}<div class="hscroll">${s}</svg></div></div>`;
 }
 function renderHourly(D) {
@@ -1071,7 +1081,7 @@ function renderDays(D) {
     if (prev && m.name === 'ECMWF' && prev.name !== 'ECMWF') html += `<div class="sep">Relais ECMWF : Météo-France s'arrête vers J+4</div>`;
     if (n === 10) html += `<div class="sep">Au-delà de 10 jours : une tendance, pas une prévision</div>`;
     const e = d.ens, conf = confidence(e);
-    const rainTxt = d.rain >= 0.5 ? `${num1(Math.round(d.rain * 10) / 10)} mm` : '';
+    const rainTxt = d.rain >= 10 ? `${Math.round(d.rain)} mm` : d.rain >= 0.5 ? `${num1(Math.round(d.rain * 10) / 10)} mm` : '';
     const prob = e && e.pRain >= 0.1 ? `<small>${pc(e.pRain)}</small>` : '';
     const band = e ? `<s style="left:${x(Math.min(e.min10, d.tmin))}%;right:${100 - x(Math.max(e.max90, d.tmax))}%"></s>` : '';
     const nowDot = n === 0 && D.temp != null ? `<em style="left:${x(D.temp)}%"></em>` : '';
@@ -1151,10 +1161,7 @@ function renderFrost(D) {
       <span class="n-d">${wd(nt.end).replace('.', '')} ${dayNum(nt.end)}</span><b>${deg(nt.tmin)}</b>
       <span class="n-p">${nt.p0 != null && nt.p0 >= .02 ? pc(nt.p0) : ''}</span></div>`;
   }).join('');
-  $('frost').innerHTML = `<p class="headline">${head}</p><div class="nights">${cells}</div>
-    <div class="legend"><span><i style="background:var(--f4)"></i>gel fort (≤ −5°)</span><span><i style="background:var(--f3)"></i>gel</span>
-    <span><i style="background:var(--f2)"></i>gel ou gelée blanche possible</span><span><i style="background:var(--f1)"></i>risque faible</span></div>
-    <p class="note">Minimale sous abri (à 2 m), au petit matin du jour indiqué. Par nuit claire et sans vent, le sol peut être 3 à 5° plus froid : gelée blanche possible dès 3°. Le % est la part des 51 scénarios ECMWF qui descendent à 0° ou moins.</p>`;
+  $('frost').innerHTML = `<p class="headline">${head}</p><div class="nights">${cells}</div>`;
 }
 
 /* ---------- rendu : soleil et lune ---------- */
@@ -1302,7 +1309,6 @@ function renderSources(D) {
   if (p.cp) links.push(`<a href="https://meteofrance.com/previsions-meteo-france/${slug(p.name)}/${p.cp}" target="_blank" rel="noopener">Comparer sur meteofrance.com</a>`);
   if (p.dep) links.push(`<a href="https://vigilance.meteofrance.fr/fr/${slug(p.dep)}" target="_blank" rel="noopener">Vigilance ${esc(p.dep)}</a>`);
   $('sources').innerHTML = `<table class="src">${rows.map(r => `<tr><td><b>${r[0]}</b><small>${r[1]}</small></td><td class="run">${r[2]}</td></tr>`).join('')}</table>
-    <p class="note">Pour chaque heure, l'app prend le modèle le plus fin disponible. Ce sont les modèles que fait tourner Météo-France ; sa prévision officielle y ajoute la retouche de ses prévisionnistes, d'où de petits écarts possibles avec son site. La vigilance (orange, rouge) n'est pas dans les données ouvertes sans clé : le lien ci-dessous ouvre la carte officielle du département.</p>
     <div class="links">${links.join('')}</div>
     <p class="note">Données Météo-France (Licence Ouverte Etalab), ECMWF et Copernicus (CC BY 4.0), servies par <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Normales et records : fiches climatologiques Météo-France (meteo.data.gouv.fr), station la plus proche à altitude comparable. Communes : API Adresse et geo.api.gouv.fr. Position du soleil et de la lune calculée sur l'appareil.</p>`;
 }
@@ -1314,7 +1320,7 @@ function render() {
   if (!state.data) return;
   const norm = state.norm && state.norm.pid === placeId(state.place) ? state.norm : null;
   const D = build(state.data, state.place, Date.now(), norm);
-  for (const fn of [renderHero, renderHourly, renderDays, renderFrost, renderSun, renderDetails, renderSources, renderMini, renderSlot, renderModels, renderDaysChart]) {
+  for (const fn of [renderHero, renderHourly, renderDays, renderFrost, renderSun, renderDetails, renderSources, renderMini, renderModels, renderDaysChart]) {
     try { fn(D); } catch (e) { console.error(fn.name, e); }
   }
   state.D = D;
@@ -1336,7 +1342,7 @@ function clearView() {
   state.data = null;
   document.title = `${state.place.name} - Ciel`;
   $('heroBody').innerHTML = '<div class="skeleton">Chargement des prévisions...</div>';
-  for (const id of ['hourly', 'days', 'frost', 'sun', 'details', 'sources', 'hourlyNote', 'slot', 'models', 'daysChart']) $(id).innerHTML = '';
+  for (const id of ['hourly', 'days', 'frost', 'sun', 'details', 'sources', 'hourlyNote', 'models', 'daysChart']) $(id).innerHTML = '';
 }
 async function load(place) {
   const switching = !state.place || placeId(state.place) !== placeId(place);
@@ -1504,56 +1510,7 @@ function renderFoot() {
     store.set('theme', next); applyTheme(next); renderFoot(); render();
   };
 }
-/* Meilleur creneau : chaque heure de jour notee sur 100 (pluie, ecart a la temperature ideale, vent, rafales),
-   puis la meilleure fenetre continue, notee surtout par sa pire heure */
-const ACTIVITIES = {
-  course: { label: 'Course', len: 2, ideal: [7, 16], wind: 25, gust: 45 },
-  velo: { label: 'Vélo', len: 3, ideal: [13, 22], wind: 15, gust: 35 },
-  balade: { label: 'Balade', len: 2, ideal: [12, 24], wind: 25, gust: 50 },
-};
-let activity = 'course';
-function hourScore(D, i, a) {
-  const H = D.H, t = H.temperature_2m[i];
-  if (t == null || D.isNight(H.t[i] + 30 * 60e3)) return { night: true };
-  const rain = H.precipitation[i + 1] || 0;
-  if (rain >= 0.2) return { wet: true };
-  const ws = H.wind_speed_10m[i] || 0, gu = H.wind_gusts_10m[i] || 0, [lo, hi] = a.ideal;
-  const s = 100 - (rain >= 0.05 ? 25 : 0) - Math.max(0, lo - t, t - hi) * 7 - Math.max(0, ws - a.wind) * 3 - Math.max(0, gu - a.gust) * 2;
-  return { s: Math.max(5, Math.round(s)) };
-}
-const scoreColor = s => s >= 80 ? '#4cbf7a' : s >= 60 ? '#a3cf5c' : s >= 40 ? '#e6c84f' : '#ef9a4f';
 const whenDay = (D, t) => { const k = dayKey(t); return k === D.todayKey ? "Aujourd'hui" : k === dayKey(D.now + DAY) ? 'Demain' : cap(fWdLong.format(t)); };
-function renderSlot(D) {
-  const a = ACTIVITIES[activity], H = D.H, sc = [];
-  for (let i = D.iNow + 1; i <= Math.min(D.last - 1, D.iNow + 40); i++) sc.push([i, hourScore(D, i, a)]);
-  let best = null;
-  for (let k = 0; k + a.len <= sc.length; k++) {
-    const win = sc.slice(k, k + a.len);
-    if (win.some(([, x]) => x.night || x.wet)) continue;
-    const ss = win.map(([, x]) => x.s), score = Math.min(...ss) * .7 + ss.reduce((p, q) => p + q, 0) / ss.length * .3;
-    if (!best || score > best.score + .5) best = { score, k, i0: win[0][0], i1: win[win.length - 1][0] };
-  }
-  const n = sc.length, pct = k => (k / n * 100).toFixed(2);
-  const cells = sc.map(([, x]) => `<i class="${x.night ? 'n' : x.wet ? 'w' : ''}"${x.s ? ` style="background:${scoreColor(x.s)}"` : ''}></i>`).join('');
-  const labs = sc.map(([i], k) => k === 0 ? `<span style="left:0">${hourOf(H.t[i])}h</span>`
-    : hourOf(H.t[i]) === 0 ? `<span style="left:${pct(k)}%">${wd(H.t[i]).replace('.', '').toLowerCase()}</span>` : '').join('');
-  let head;
-  if (best) {
-    const idx = []; for (let i = best.i0; i <= best.i1; i++) idx.push(i);
-    const T = idx.map(i => H.temperature_2m[i]), lo = Math.round(Math.min(...T)), hi = Math.round(Math.max(...T));
-    const verdict = best.score >= 80 ? ['idéal', '#bfe9cf'] : best.score >= 60 ? ['bien', '#dcefb9'] : best.score >= 40 ? ['correct', '#f4e6a6'] : ['faute de mieux', '#f8cfa8'];
-    head = `<div class="slot-best"><b>${whenDay(D, H.t[best.i0])}, ${hourOf(H.t[best.i0])}h - ${hourOf(H.t[best.i1] + HOUR)}h</b><span style="background:${verdict[1]}">${verdict[0]}</span></div>
-      <div class="slot-facts">sec · ${lo === hi ? deg(lo) : `${deg(lo)} à ${deg(hi)}`} · vent ${Math.round(Math.max(...idx.map(i => H.wind_speed_10m[i])))} km/h, rafales ${Math.round(Math.max(...idx.map(i => H.wind_gusts_10m[i])))} km/h</div>`;
-  } else head = `<div class="slot-best"><b>Pas de bon créneau d'ici ${fWdLong.format(H.t[sc[n - 1][0]])}</b></div><div class="slot-facts">pluie ou nuit sur toutes les heures</div>`;
-  $('slot').innerHTML = `<div class="acts">${Object.entries(ACTIVITIES).map(([k, v]) => `<button type="button" data-act="${k}" aria-pressed="${k === activity}">${v.label}</button>`).join('')}</div>
-    ${head}
-    <div class="tl-wrap"><div class="tl">${cells}</div>${best ? `<span class="tl-best" style="left:calc(${pct(best.k)}% - 2px);width:calc(${pct(a.len)}% + 3px)"></span>` : ''}</div>
-    <div class="tl-lab">${labs}</div>
-    <div class="legend"><span><i style="background:#4cbf7a"></i>idéal</span><span><i style="background:#e6c84f"></i>moyen</span><span><i style="background:#ef9a4f"></i>bof</span>
-      <span><i style="background:repeating-linear-gradient(135deg,var(--rain) 0 2px,transparent 2px 4px)"></i>pluie</span><span><i style="background:color-mix(in srgb,var(--ink) 16%,transparent)"></i>nuit</span></div>
-    <p class="note">Les ${n} prochaines heures, de jour seulement. ${a.label} : idéal entre ${a.ideal[0]} et ${a.ideal[1]}°, vent sous ${a.wind} km/h.</p>`;
-}
-
 /* Les trois modeles cote a cote, tant qu'ils se recouvrent (~4 jours) */
 const MODEL_LINES = [['meteofrance_arome_france_hd', 'AROME 1,5 km', '#e2663a'], ['meteofrance_arpege_europe', 'ARPEGE 11 km', '#2f7fe0'], ['ecmwf_ifs', 'ECMWF 9 km', '#9a6ad8']];
 function renderModels(D) {
@@ -1607,8 +1564,7 @@ function renderModels(D) {
   }).join('');
   $('models').innerHTML = `<p class="verdict">${verdict}</p>${s}
     <div class="mleg">${series.map(sr => `<span><i style="background:${sr.color}"></i>${sr.name}</span>`).join('')}</div>
-    <table class="rtab"><tr><th>Pluie (mm)</th>${dayList.map((d, k) => `<th>${k ? `${wd(d.t0).replace('.', '')} ${dayNum(d.t0)}` : 'Auj.'}</th>`).join('')}</tr>${rows}</table>
-    <p class="note">Quand les courbes se suivent, la prévision est solide. Quand elles s'écartent, l'app affiche le modèle le plus fin, mais c'est le signe de la prendre avec recul. Case orange : un modèle voit de la pluie, un autre presque rien.</p>`;
+    <table class="rtab"><tr><th>Pluie (mm)</th>${dayList.map((d, k) => `<th>${k ? `${wd(d.t0).replace('.', '')} ${dayNum(d.t0)}` : 'Auj.'}</th>`).join('')}</tr>${rows}</table>`;
   // desaccord sur la pluie : un modele >= 1 mm, un autre < 0,2 mm le meme jour
   const tab = $('models').querySelector('.rtab');
   dayList.forEach((d, k) => {
@@ -1652,6 +1608,82 @@ function renderDaysChart(D) {
 }
 
 
+/* ---------- v7 : aide "?" de chaque carte, a la place des notes sous les cartes ---------- */
+const helpIco = k => `<svg viewBox="0 0 24 24" fill="none" stroke="${TCOL[k]}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TI[k]}</svg>`;
+const helpRows = (rows, cls = '') => `<ul class="${cls}">${rows.map(([v, t]) => `<li><span class="hs">${v}</span><span>${t}</span></li>`).join('')}</ul>`;
+const HELP = {
+  hourly: `<p>Une colonne par heure : le temps, puis la température, colorée du froid au chaud. Fond grisé : la nuit.</p>
+    <p>Lignes du bas, de haut en bas :</p>` + helpRows([
+    [helpIco('rain'), "pluie en mm sur l'heure qui suit ; au-delà de 4 jours, le % dessous est la probabilité de pluie"],
+    [helpIco('wind'), 'vent moyen en km/h, la flèche montre où il va ; « r » : rafales, en orange dès 50 km/h'],
+    [helpIco('feel'), "ressenti : la température que l'on perçoit avec le vent et l'humidité"],
+    [helpIco('hum'), "humidité de l'air"],
+    [helpIco('uv'), 'indice UV (Copernicus), les 4 premiers jours'],
+  ]),
+  days: helpRows([
+    [dots(4), "indice de confiance sur 5, tiré de l'accord entre les 51 scénarios ECMWF ; en orange, prévision fragile"],
+    ['<span class="d-bar"><s style="left:0;right:0"></s><i style="left:22%;right:22%;background:linear-gradient(90deg,#4aa3df,#f0953f)"></i></span>',
+      'du mini au maxi ; bande grise : la plage des scénarios, des 10 % les plus froids aux 10 % les plus chauds ; le rond : la température actuelle'],
+    ['<span class="d-rain">2 mm<small>60 %</small></span>', 'pluie du jour, et la part des scénarios qui donnent au moins 1 mm'],
+    ['<span class="an hot">+3°</span>', 'écart avec les normales 1991-2020 de Météo-France (station la plus proche)'],
+  ], 'wide') + `<p>Touchez un jour pour son détail. En courbe : pointillés = normales, barres bleues = probabilité de pluie, fond grisé après 10 jours = une tendance, pas une prévision.</p>`,
+  frost: `<div class="legend"><span><i style="background:var(--f4)"></i>gel fort (≤ −5°)</span><span><i style="background:var(--f3)"></i>gel</span>
+    <span><i style="background:var(--f2)"></i>gel ou gelée blanche possible</span><span><i style="background:var(--f1)"></i>risque faible</span></div>
+    <p>Minimale sous abri (à 2 m), au petit matin du jour indiqué. Par nuit claire et sans vent, le sol peut être 3 à 5° plus froid : gelée blanche possible dès 3°.</p>
+    <p>Le % sous la température : la part des 51 scénarios ECMWF qui descendent à 0° ou moins.</p>`,
+  sun: `<p><b>Aube et crépuscule civils</b> : le soleil est à moins de 6° sous l'horizon, il fait encore assez clair pour se passer de lumière.</p>
+    <p><b>Heure dorée</b> : à partir du moment où le soleil passe sous 6° au-dessus de l'horizon, la lumière devient chaude et rasante.</p>
+    <p><b>Midi solaire</b> : le soleil au plus haut, rarement à midi pile.</p>
+    <p>Tout est calculé sur l'appareil (formules de la NOAA), sans appel réseau.</p>`,
+  details: helpRows([
+    [helpIco('feel'), "ressenti : la température que l'on perçoit avec le vent et l'humidité"],
+    [helpIco('hum'), "point de rosée : la température à laquelle l'air se mettrait à condenser (rosée, brouillard)"],
+    [helpIco('uv'), 'indice UV, le maxi de la journée, de 0 à 11 et plus'],
+    [helpIco('air'), "qualité de l'air : indice européen, de bon (0 à 20) à extrêmement médiocre (plus de 100)"],
+    [helpIco('pollen'), "pollens : les 3 plus présents aujourd'hui, sur 4 niveaux"],
+    [helpIco('press'), 'pression ramenée au niveau de la mer ; une baisse rapide annonce souvent une dégradation'],
+    [helpIco('norm'), 'normales 1991-2020 et records du mois de la station Météo-France la plus proche'],
+  ]) + '<p>UV, air et pollens : prévisions Copernicus (CAMS).</p>',
+  models: `<p>La température prévue par chacun des trois modèles, tant qu'ils se recouvrent. Quand les courbes se suivent, la prévision est solide. Quand elles s'écartent, l'app affiche le modèle le plus fin, mais c'est le signe de la prendre avec recul.</p>
+    <p>Le tableau : la pluie par jour et par modèle. Case orange : un modèle voit de la pluie, un autre presque rien.</p>`,
+  sources: `<p>Pour chaque heure, l'app prend le modèle le plus fin disponible : AROME, puis ARPEGE, puis l'ECMWF. Ce sont les modèles que fait tourner Météo-France ; sa prévision officielle y ajoute la retouche de ses prévisionnistes, d'où de petits écarts possibles avec son site.</p>
+    <p>À droite : l'heure du run (le calcul du modèle) et quand il a été reçu.</p>
+    <p>La vigilance (orange, rouge) n'est pas dans les données ouvertes sans clé : le lien « Vigilance » ouvre la carte officielle du département.</p>`,
+  explore: `<p>Un lieu et un jour au choix, de 1940 à dans 14 jours. Par défaut : le même jour il y a un an.</p>
+    <p><b>Aujourd'hui et après</b> : la prévision, avec les mêmes modèles que l'app.</p>
+    <p><b>Depuis l'automne 2022</b> : les archives des prévisions Météo-France (AROME, ARPEGE), très proches de ce qui s'est passé.</p>
+    <p><b>Avant</b> : la réanalyse ERA5 de Copernicus, le temps reconstitué à partir des observations, moins fine qu'une station.</p>`,
+};
+const helpPop = document.createElement('div');
+helpPop.id = 'helpPop';
+helpPop.className = 'help-pop';
+helpPop.setAttribute('role', 'note');
+helpPop.hidden = true;
+let helpBtn = null;
+function closeHelp() {
+  if (!helpBtn) return;
+  helpBtn.setAttribute('aria-expanded', 'false');
+  helpPop.hidden = true;
+  helpBtn = null;
+}
+document.querySelectorAll('[data-help]').forEach(sec => {
+  const t = sec.querySelector('.h2-t');
+  t.insertAdjacentHTML('beforeend', `<button class="help" type="button" data-help="${sec.dataset.help}" aria-label="Comment lire : ${esc(t.textContent)}" aria-expanded="false" aria-controls="helpPop">?</button>`);
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('.help');
+  if (!b) { if (!e.target.closest('#helpPop')) closeHelp(); return; }
+  const same = b === helpBtn;
+  closeHelp();
+  if (same) return;
+  helpPop.innerHTML = HELP[b.dataset.help];
+  b.closest('h2').after(helpPop);
+  helpPop.hidden = false;
+  b.setAttribute('aria-expanded', 'true');
+  helpBtn = b;
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
+
 /* ---------- v2 : barre du bas, mini-barre, balayage entre les lieux, alerte gel ---------- */
 const ICO = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const VIEWS = [
@@ -1663,6 +1695,7 @@ const VIEWS = [
   ['explore', 'Explorer', ICO('<circle cx="10.5" cy="10.5" r="7"/><path d="M20.5 20.5l-5-5"/><path d="M10.5 6.8v3.7l2.4 1.5"/>')],
 ];
 function show(k) {
+  closeHelp();
   document.body.dataset.view = k;
   document.querySelectorAll('#tabbar [data-go]').forEach(b => b.setAttribute('aria-current', b.dataset.go === k));
   window.scrollTo(0, 0);
@@ -1701,7 +1734,6 @@ $('hero').addEventListener('touchend', e => {
 });
 $('hdots').addEventListener('click', e => { const b = e.target.closest('[data-dot]'); if (b) load(favs()[+b.dataset.dot]); });
 
-$('slot').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b && state.D) { activity = b.dataset.act; renderSlot(state.D); } });
 $('daysSeg').addEventListener('click', e => {
   const b = e.target.closest('[data-mode]'); if (!b) return;
   $('daysSeg').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
