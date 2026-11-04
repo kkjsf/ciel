@@ -499,10 +499,12 @@ a { color: var(--accent); }
 
 <script>
 'use strict';
-const APP_VERSION = '10';
-const APP_BUILT = '03/11/2026 13h22';
+const APP_VERSION = '11';
+const APP_BUILT = '04/11/2026 16h30';
 const TZ = 'Europe/Paris';
 const HOUR = 3600e3, DAY = 864e5;
+// A partir de ce jour (0 = aujourd'hui), les 15 jours montrent la mediane des 51 scenarios ECMWF
+const FAR = 7;
 const DEFAULT_PLACE = { name: 'Toulouse', lat: 43.6045, lon: 1.4442, cp: '31000', dep: 'Haute-Garonne' };
 
 // Ordre de priorite : pour chaque heure et chaque variable, le premier modele qui a une valeur.
@@ -515,7 +517,8 @@ const MODELS = [
 const HOURLY = ['temperature_2m', 'apparent_temperature', 'precipitation', 'snowfall', 'weather_code', 'cloud_cover',
   'wind_speed_10m', 'wind_gusts_10m', 'wind_direction_10m', 'relative_humidity_2m', 'dew_point_2m', 'pressure_msl',
   'precipitation_probability'];
-const META_IDS = ['meteofrance_arome_france_hd', 'meteofrance_arpege_europe', 'ecmwf_ifs', 'ecmwf_ifs025_ensemble'];
+const NOW_ID = 'meteofrance_arome_france_hd_15min';
+const META_IDS = [NOW_ID, 'meteofrance_arome_france_hd', 'meteofrance_arpege_europe', 'ecmwf_ifs', 'ecmwf_ifs025_ensemble'];
 const POLLENS = [['grass', 'Graminées'], ['birch', 'Bouleau'], ['alder', 'Aulne'], ['olive', 'Olivier'], ['mugwort', 'Armoise'], ['ragweed', 'Ambroisie']];
 
 const $ = id => document.getElementById(id);
@@ -524,6 +527,38 @@ const store = {
   set(k, v) { try { localStorage.setItem('ciel:' + k, JSON.stringify(v)); return true; } catch { return false; } },
   del(k) { try { localStorage.removeItem('ciel:' + k); } catch {} },
 };
+// Previsions en cache (250 Ko par lieu) dans IndexedDB : le localStorage de kkjsf.github.io (5 Mo) est partage
+// avec les autres apps du compte. Repli sur la memoire si IndexedDB est indisponible (navigation privee).
+const idb = (() => {
+  const mem = new Map();
+  let db = null;
+  const open = () => db || (db = new Promise(ok => {
+    try {
+      const r = indexedDB.open('ciel', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => ok(r.result);
+      r.onerror = () => ok(null);
+    } catch { ok(null); }
+  }));
+  const req = async (mode, fn, fallback) => {
+    const d = await open();
+    if (!d) return fallback();
+    return new Promise(ok => {
+      try {
+        const r = fn(d.transaction('kv', mode).objectStore('kv'));
+        r.onsuccess = () => ok(r.result);
+        r.onerror = () => ok(fallback());
+      } catch { ok(fallback()); }
+    });
+  };
+  return {
+    get: k => req('readonly', st => st.get(k), () => mem.get(k)),
+    set: (k, v) => req('readwrite', st => st.put(v, k), () => mem.set(k, v)),
+    del: k => req('readwrite', st => st.delete(k), () => mem.delete(k)),
+  };
+})();
+// Nettoyage des previsions gardees dans le localStorage jusqu'a la v10
+try { Object.keys(localStorage).filter(k => k.startsWith('ciel:data:')).forEach(k => localStorage.removeItem(k)); } catch {}
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /* ---------- dates ---------- */
@@ -738,8 +773,9 @@ function urls(p) {
     month: (from, to) => `https://historical-forecast-api.open-meteo.com/v1/forecast?${loc}${el}&start_date=${from}&end_date=${to}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum`,
     // les 62 derniers jours gardes par l'API de prevision (rapide) ; l'archive seulement s'il manque des jours
     past: `https://api.open-meteo.com/v1/forecast?${loc}${el}&past_days=62&forecast_days=1&daily=temperature_2m_max,temperature_2m_min,precipitation_sum`,
-    fc: `https://api.open-meteo.com/v1/forecast?${loc}${el}&past_days=1&forecast_days=16&hourly=${HOURLY}`
-      + `&minutely_15=precipitation,temperature_2m&past_minutely_15=4&forecast_minutely_15=12&models=${MODELS.map(m => m.id)}`,
+    fc: `https://api.open-meteo.com/v1/forecast?${loc}${el}&past_days=1&forecast_days=16&hourly=${HOURLY}&models=${MODELS.map(m => m.id)}`,
+    // AROME au quart d'heure recalcule chaque heure (le run AROME complet n'arrive que toutes les 3 h, avec 4 h de retard)
+    now: `https://api.open-meteo.com/v1/forecast?${loc}${el}&minutely_15=precipitation,temperature_2m&past_minutely_15=4&forecast_minutely_15=12&models=${NOW_ID},meteofrance_arome_france_hd`,
     ens: `https://ensemble-api.open-meteo.com/v1/ensemble?${loc}${el}&forecast_days=15&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&models=ecmwf_ifs025`,
     aq: `https://air-quality-api.open-meteo.com/v1/air-quality?${loc}&forecast_days=4&hourly=uv_index,european_aqi,${POLLENS.map(p => p[0] + '_pollen')}`,
   };
@@ -757,7 +793,7 @@ function ensStats(ens) {
     const X = col(mx), N = col(mn), P = col(pr);
     if (X.length < 10) return;
     out[dayKey(t * 1000)] = {
-      n: X.length, max10: pct(X, .1), max90: pct(X, .9), min10: pct(N, .1), min90: pct(N, .9),
+      n: X.length, max10: pct(X, .1), max50: pct(X, .5), max90: pct(X, .9), min10: pct(N, .1), min50: pct(N, .5), min90: pct(N, .9), rain50: pct(P, .5),
       pRain: P.filter(v => v >= 1).length / P.length, pFrost: N.filter(v => v <= 0).length / N.length,
     };
   });
@@ -771,6 +807,15 @@ function confidence(e) {
   const u = 1 - Math.abs(2 * e.pRain - 1);
   const r = u < .2 ? 5 : u < .4 ? 4 : u < .6 ? 3 : u < .8 ? 2 : 1;
   return Math.round((2 * Math.min(t, r) + Math.max(t, r)) / 3);
+}
+// Jours lointains : le pictogramme du run ne doit pas annoncer de la pluie que la plupart des scenarios ne donnent pas
+function farCode(H, idx, e) {
+  const c = dayCode(H, idx);
+  if (c == null) return null;
+  const wet = c >= 51;
+  if (wet && e.pRain < .4) { const cc = mean(idx.map(i => H.cloud_cover[i])); return cc == null || cc >= 45 ? 3 : 2; }
+  if (!wet && e.pRain >= .6) return 61;
+  return c;
 }
 // Pictogramme du jour : orage s'il y en a, sinon le type de precipitation le plus frequent s'il pleut, sinon la nebulosite
 function dayCode(H, idx) {
@@ -798,6 +843,10 @@ const FROST = {
   faible: { label: 'Risque faible', cls: 'f1', rank: 1 },
   non: { label: 'Pas de gel', cls: 'f0', rank: 0 },
 };
+// Nuits lointaines : seule la part des 51 scenarios qui gelent a un sens
+function farFrost(p0) {
+  return p0 >= .5 ? 'gel' : p0 >= .25 ? 'possible' : p0 >= .05 ? 'faible' : 'non';
+}
 function frostLevel(tmin, clearCalm, p0) {
   if (tmin <= -5) return 'fort';
   if (tmin <= 0) return 'gel';
@@ -817,7 +866,27 @@ function mergeHourly(h, models) {
   });
   H.src = t.map((_, i) => models ? models.findIndex(m => (h['temperature_2m_' + m.id] || [])[i] != null) : -1);
   H.uv = t.map(() => null);
+  if (models) blendRelays(h, H, models);
   return H;
+}
+// Au relais d'un modele a l'autre (AROME -> ARPEGE, ARPEGE -> ECMWF), les deux peuvent differer de plusieurs degres :
+// le modele suivant est decale de l'ecart mesure a la derniere heure commune, ecart qui s'efface en BLEND_H heures.
+const BLEND_H = 12;
+const BLEND = { temperature_2m: [-99, 99], apparent_temperature: [-99, 99], dew_point_2m: [-99, 99], pressure_msl: [800, 1100],
+  relative_humidity_2m: [0, 100], wind_speed_10m: [0, 999], wind_gusts_10m: [0, 999] };
+function blendRelays(h, H, models) {
+  for (const [v, [lo, hi]] of Object.entries(BLEND)) {
+    const src = H.t.map((_, i) => models.findIndex(m => (h[v + '_' + m.id] || [])[i] != null));
+    for (let i = 1; i < src.length; i++) {
+      const a = src[i - 1], b = src[i];
+      if (a < 0 || b <= a) continue;
+      const prev = h[v + '_' + models[b].id][i - 1];
+      if (prev == null) continue;
+      const gap = H[v][i - 1] - prev;
+      for (let k = 0; k < BLEND_H && src[i + k] === b; k++)
+        H[v][i + k] = Math.min(hi, Math.max(lo, H[v][i + k] + gap * (1 - (k + 1) / (BLEND_H + 1))));
+    }
+  }
 }
 function addUv(H, aq) {
   if (!aq || !aq.hourly) return;
@@ -850,12 +919,16 @@ function build(data, place, now = Date.now(), norm = null) {
     if (T.length < 18) continue;
     const votes = {};
     idx.forEach(i => votes[H.src[i]] = (votes[H.src[i]] || 0) + 1);
+    const e = ens[key], far = days.length >= FAR && e;
+    const rain = idx.reduce((s, i) => s + (H.precipitation[i + 1] || 0), 0);
     days.push({
-      key, idx, t0: t[idx[0]], tmin: Math.min(...T), tmax: Math.max(...T),
-      rain: idx.reduce((s, i) => s + (H.precipitation[i + 1] || 0), 0),
+      key, idx, t0: t[idx[0]], far: !!far,
+      // Au-dela de J+6, un run deterministe n'est qu'un scenario parmi 51 : on affiche la mediane de l'ensemble
+      tmin: far ? e.min50 : Math.min(...T), tmax: far ? e.max50 : Math.max(...T), rain: far ? e.rain50 : rain,
+      det: far ? { tmin: Math.min(...T), tmax: Math.max(...T), rain } : null,
       snow: idx.reduce((s, i) => s + (H.snowfall[i + 1] || 0), 0),
       gust: maxOf(idx, H.wind_gusts_10m), wind: maxOf(idx, H.wind_speed_10m),
-      code: dayCode(H, idx), src: +Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0], ens: ens[key],
+      code: far ? farCode(H, idx, e) : dayCode(H, idx), src: +Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0], ens: ens[key],
       normal: norm ? normalOn(norm, key) : null,
     });
   }
@@ -870,15 +943,18 @@ function build(data, place, now = Date.now(), norm = null) {
     const core = w.filter(i => { const hr = hourOf(t[i]); return hr >= 22 || hr <= 7; });
     const cloud = mean(core.map(i => H.cloud_cover[i])), wind = mean(core.map(i => H.wind_speed_10m[i]));
     const tmin = Math.min(...w.map(i => H.temperature_2m[i]));
-    const next = dayKey(end), p0 = ens[next] ? ens[next].pFrost : null;
+    const next = dayKey(end), e = ens[next], p0 = e ? e.pFrost : null;
     const clearCalm = cloud != null && wind != null && cloud < 40 && wind < 10;
-    nights.push({ key: d.key, next, end, tmin, cloud, wind, clearCalm, p0, level: frostLevel(tmin, clearCalm, p0) });
+    if (d.far || (days[days.indexOf(d) + 1] || {}).far) {
+      if (!e) continue;
+      nights.push({ key: d.key, next, end, tmin: e.min50, cloud, wind, clearCalm: false, p0, far: true, level: farFrost(p0) });
+    } else nights.push({ key: d.key, next, end, tmin, cloud, wind, clearCalm, p0, level: frostLevel(tmin, clearCalm, p0) });
   }
 
   // Temperature actuelle : AROME au quart d'heure, interpolee a la minute
-  const m15 = data.fc.minutely_15;
+  const m15 = quarter(data, 'temperature_2m');
   let temp = null;
-  if (m15) temp = interp(m15.time.map(s => s * 1000), m15.temperature_2m_meteofrance_arome_france_hd || [], now);
+  if (m15) temp = interp(m15.t, m15.v, now);
   if (temp == null) temp = interp(t, H.temperature_2m, now) ?? H.temperature_2m[iNow];
 
   return { place, data, H, t, iNow, now, last, days, nights, sunFor, isNight, ens, todayKey, temp, norm };
@@ -955,13 +1031,20 @@ async function ensureNorm(p) {
 }
 
 /* ---------- rendu : en-tete ---------- */
+// Serie au quart d'heure : le run horaire, sinon le run AROME complet (et les caches d'avant la v11)
+function quarter(data, v) {
+  const m = (data.now && data.now.minutely_15) || data.fc.minutely_15;
+  if (!m) return null;
+  const a = m[`${v}_${NOW_ID}`] || [], b = m[`${v}_meteofrance_arome_france_hd`] || [];
+  const vals = m.time.map((_, i) => a[i] ?? b[i] ?? null);
+  return vals.some(x => x != null) ? { t: m.time.map(s => s * 1000), v: vals, fresh: a.some(x => x != null) } : null;
+}
 function nowcast(D) {
-  const m = D.data.fc.minutely_15;
-  const P = m && m.precipitation_meteofrance_arome_france_hd;
-  if (!P || P.every(v => v == null)) return '';
+  const m = quarter(D.data, 'precipitation');
+  if (!m) return '';
   // valeur au temps T = cumul du quart d'heure qui finit a T
   const q = [];
-  m.time.forEach((s, i) => { const end = s * 1000; if (end > D.now && q.length < 8 && P[i] != null) q.push({ start: end - 15 * 60e3, mm: P[i] }); });
+  m.t.forEach((end, i) => { if (end > D.now && q.length < 8 && m.v[i] != null) q.push({ start: end - 15 * 60e3, mm: m.v[i] }); });
   if (q.length < 4) return '';
   const wet = x => x.mm >= 0.05;
   const kind = mmh => mmh < 1 ? 'faible' : mmh < 4 ? 'modérée' : 'forte';
@@ -1148,8 +1231,10 @@ function renderDays(D) {
   days.forEach((d, n) => {
     const m = MODELS[d.src], prev = n && MODELS[days[n - 1].src];
     if (prev && m.name === 'ECMWF' && prev.name !== 'ECMWF') html += `<div class="sep">Relais ECMWF : Météo-France s'arrête vers J+4</div>`;
+    if (n === FAR && d.far) html += `<div class="sep">Dès J+${FAR} : la valeur médiane des ${d.ens.n} scénarios ECMWF</div>`;
     if (n === 10) html += `<div class="sep">Au-delà de 10 jours : une tendance, pas une prévision</div>`;
-    const e = d.ens, conf = confidence(e);
+    // Aujourd'hui l'apres-midi, la dispersion de l'ensemble porte surtout sur des heures deja passees
+    const e = d.ens, conf = n === 0 && hourOf(D.now) >= 12 ? null : confidence(e);
     const rainTxt = d.rain >= 10 ? `${Math.round(d.rain)} mm` : d.rain >= 0.5 ? `${num1(Math.round(d.rain * 10) / 10)} mm` : '';
     const prob = e && e.pRain >= 0.1 ? `<small>${pc(e.pRain)}</small>` : '';
     const band = e ? `<s style="left:${x(Math.min(e.min10, d.tmin))}%;right:${100 - x(Math.max(e.max90, d.tmax))}%"></s>` : '';
@@ -1186,6 +1271,7 @@ function dayDetail(D, d) {
   if (d.rain >= 0.1) items.push(`Pluie : ${num1(Math.round(d.rain * 10) / 10)} mm${d.snow >= 0.5 ? `, dont neige ${num1(Math.round(d.snow))} cm` : ''}`);
   items.push(...dayExtras(H, d.idx));
   if (d.normal) items.push(normalLine(D.norm, d.normal, d.tmin, d.tmax));
+  if (d.far) items.push(`Mini, maxi et pluie du jour : la médiane des ${e.n} scénarios. La courbe ci-dessus n'en montre qu'un, le run ECMWF : ${deg(d.det.tmin)} / ${deg(d.det.tmax)}, ${num1(Math.round(d.det.rain * 10) / 10)} mm`);
   if (e) items.push(`Les ${e.n} scénarios ECMWF : max entre ${deg(e.max10)} et ${deg(e.max90)}, min entre ${deg(e.min10)} et ${deg(e.min90)}, au moins 1 mm de pluie dans ${pc(e.pRain)} des cas`);
   items.push(`Source : ${srcTxt}${step > 1 ? `. Pas de ${step} h : à cette échéance le modèle ne sort pas de données horaires` : ''}`);
   return `<div class="dd-h">${cap(fFull.format(d.t0))}</div>
@@ -1364,6 +1450,7 @@ function renderSources(D) {
   const until = t => t ? `jusqu'à ${wd(t).replace('.', '').toLowerCase()} ${dayNum(t)}, ${hourOf(t)}h` : 'indisponible ici';
   const runOf = id => meta[id] ? `run de ${hm(meta[id].init * 1000)}<br>reçu ${ago(meta[id].avail * 1000, D.now)}` : '';
   const rows = [
+    ['AROME 15 min', 'Météo-France, recalculé chaque heure : la température actuelle et la pluie des 2 prochaines heures', runOf(NOW_ID)],
     ['AROME 1,5 km', `Météo-France, le modèle le plus fin, ${until(end('meteofrance_arome_france_hd'))}`, runOf('meteofrance_arome_france_hd')],
     ['ARPEGE 11 km', `Météo-France, prend le relais ${until(end('meteofrance_arpege_europe'))}`, runOf('meteofrance_arpege_europe')],
     ['ECMWF IFS 9 km', `Centre européen, dont Météo-France est membre et qu'elle utilise elle aussi au-delà de 4 jours`, runOf('ecmwf_ifs')],
@@ -1378,7 +1465,7 @@ function renderSources(D) {
   const p = D.place;
   const links = [];
   if (N) links.push(`<a href="${FICHE_URL(N.num)}" target="_blank" rel="noopener">Fiche de la station</a>`);
-  if (p.cp) links.push(`<a href="https://meteofrance.com/previsions-meteo-france/${slug(p.town || p.name)}/${p.cp}" target="_blank" rel="noopener">Comparer sur meteofrance.com</a>`);
+  if (/^\d{5}$/.test(p.cp)) links.push(`<a href="https://meteofrance.com/previsions-meteo-france/${slug(p.town || p.name)}/${encodeURIComponent(p.cp)}" target="_blank" rel="noopener">Comparer sur meteofrance.com</a>`);
   if (p.dep) links.push(`<a href="https://vigilance.meteofrance.fr/fr/${slug(p.dep)}" target="_blank" rel="noopener">Vigilance ${esc(p.dep)}</a>`);
   $('sources').innerHTML = `<table class="src">${rows.map(r => `<tr><td><b>${r[0]}</b><small>${r[1]}</small></td><td class="run">${r[2]}</td></tr>`).join('')}</table>
     <div class="links">${links.join('')}</div>
@@ -1613,9 +1700,9 @@ function banner(msg) { const b = $('banner'); b.hidden = !msg; b.textContent = m
 function cacheData(p, data) {
   const ids = store.get('cached', []).filter(x => x !== placeId(p));
   ids.unshift(placeId(p));
-  ids.slice(6).forEach(x => store.del('data:' + x));
+  ids.slice(6).forEach(x => idb.del('data:' + x));
   store.set('cached', ids.slice(0, 6));
-  if (!store.set('data:' + placeId(p), data)) store.del('data:' + placeId(p));
+  idb.set('data:' + placeId(p), data);
 }
 // Un lieu sans donnees en cache vide l'ecran : jamais les previsions d'un autre lieu sous son nom
 function clearView() {
@@ -1631,7 +1718,8 @@ async function load(place) {
   store.set('place', place);
   setHash(place);
   $('placeName').textContent = place.name;
-  const cached = store.get('data:' + placeId(place));
+  const cached = await idb.get('data:' + placeId(place));
+  if (placeId(state.place) !== placeId(place)) return;
   if (cached) { state.data = cached; render(); } else if (switching) clearView();
   upgradeAlt(place);
   if (state.loading) return;
@@ -1639,8 +1727,8 @@ async function load(place) {
   $('refreshBtn').classList.add('spin');
   try {
     const u = urls(place);
-    const [fc, ens, aq, ...metas] = await Promise.all([
-      getJSON(u.fc, 3), getJSON(u.ens, 2).catch(() => null), getJSON(u.aq).catch(() => null),
+    const [fc, ens, aq, nowq, ...metas] = await Promise.all([
+      getJSON(u.fc, 3), getJSON(u.ens, 2).catch(() => null), getJSON(u.aq).catch(() => null), getJSON(u.now, 2).catch(() => null),
       ...META_IDS.map(id => getJSON(metaUrl(id)).catch(() => null)),
     ]);
     const meta = {};
@@ -1648,7 +1736,7 @@ async function load(place) {
     const alt = place.alt != null || (fc.elevation ?? 0) >= MOUNTAIN_FROM ? await getJSON(u.alt, 2).catch(() => null) : null;
     if (placeId(state.place) !== placeId(place)) return;
     const month = cached && cached.month && cached.month.day === dayKey(Date.now()) ? cached.month : null;
-    state.data = { t: Date.now(), fc, ens, aq, meta, alt, month };
+    state.data = { t: Date.now(), fc, ens, aq, now: nowq, meta, alt, month };
     cacheData(place, state.data);
     clearTimeout(state.retry);
     banner('');
@@ -1684,12 +1772,14 @@ function placeFromHash() {
   const q = new URLSearchParams(location.hash.slice(1)), l = q.get('l');
   if (!l) return null;
   const [lat, lon] = l.split(',').map(Number);
-  if (!isFinite(lat) || !isFinite(lon)) return null;
-  const p = { lat, lon, name: q.get('n') || 'Lieu', cp: q.get('cp') || '', dep: q.get('d') || '' }, a = parseInt(q.get('a'), 10);
-  if (isFinite(a)) p.alt = a;
-  if (q.get('k')) p.kind = q.get('k');
-  if (q.get('s') === 'user') p.altUser = true; else if (q.get('s')) p.altSrc = q.get('s');
-  if (q.get('t')) p.town = q.get('t');
+  if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+  // Un lien partage est une donnee etrangere : chaque champ est borne avant d'etre garde ou affiche
+  const txt = k => (q.get(k) || '').slice(0, 80), cp = q.get('cp') || '';
+  const p = { lat, lon, name: txt('n') || 'Lieu', cp: /^\d{5}$/.test(cp) ? cp : '', dep: txt('d') }, a = parseInt(q.get('a'), 10);
+  if (isFinite(a) && a >= -500 && a <= 4810) p.alt = a;
+  if (txt('k')) p.kind = txt('k');
+  if (q.get('s') === 'user') p.altUser = true; else if (Object.hasOwn(ALT_SRC, q.get('s') || '')) p.altSrc = q.get('s');
+  if (txt('t')) p.town = txt('t');
   return p;
 }
 
@@ -2028,6 +2118,8 @@ function renderDaysChart(D) {
   if (n > 10) s += `<rect x="${(cx(10) - cw / 2).toFixed(1)}" y="4" width="${(W - cx(10) + cw / 2).toFixed(1)}" height="${HH - 8}" rx="8" fill="var(--night)"/><text x="${(cx(10) - cw / 2 + 5).toFixed(1)}" y="14">tendance</text>`;
   const relay = days.findIndex((d, k) => k && MODELS[d.src].name === 'ECMWF' && MODELS[days[k - 1].src].name !== 'ECMWF');
   if (relay > 0) s += `<line x1="${(cx(relay) - cw / 2).toFixed(1)}" x2="${(cx(relay) - cw / 2).toFixed(1)}" y1="6" y2="${HH - 30}" stroke="var(--faint)" stroke-dasharray="3 3"/><text x="${(cx(relay) - cw / 2 + 4).toFixed(1)}" y="14">ECMWF</text>`;
+  const far = days.findIndex(d => d.far);
+  if (far > 0) s += `<line x1="${(cx(far) - cw / 2).toFixed(1)}" x2="${(cx(far) - cw / 2).toFixed(1)}" y1="6" y2="${HH - 30}" stroke="var(--faint)" stroke-dasharray="3 3"/><text x="${(cx(far) - cw / 2 + 4).toFixed(1)}" y="14">médiane</text>`;
   s += band('max10', 'max90', '#f0953f') + band('min10', 'min90', '#4aa3df');
   if (days.every(d => d.normal)) for (const [k, c] of [['tx', '#f0953f'], ['tn', '#4aa3df']])
     s += `<path d="${smooth(days.map((d, j) => [cx(j), y(d.normal[k])]))}" fill="none" stroke="${c}" stroke-width="1.4" stroke-dasharray="4 4" opacity=".75"/>`;
@@ -2053,7 +2145,7 @@ const helpRows = (rows, cls = '') => `<ul class="${cls}">${rows.map(([v, t]) => 
 const HELP = {
   hourly: `<p>Une colonne par heure : le temps, puis la température, colorée du froid au chaud. Fond grisé : la nuit.</p>
     <p>Lignes du bas, de haut en bas :</p>` + helpRows([
-    [helpIco('rain'), "pluie en mm sur l'heure qui suit ; au-delà de 4 jours, le % dessous est la probabilité de pluie"],
+    [helpIco('rain'), "pluie en mm sur l'heure qui suit ; au-delà de 4 jours, le % dessous est la probabilité d'au moins 0,1 mm dans l'heure"],
     [helpIco('wind'), 'vent moyen en km/h, la flèche montre où il va ; « r » : rafales, en orange dès 50 km/h'],
     [helpIco('feel'), "ressenti : la température que l'on perçoit avec le vent et l'humidité"],
     [helpIco('hum'), "humidité de l'air"],
@@ -2063,13 +2155,13 @@ const HELP = {
     [dots(4), "indice de confiance sur 5, tiré de l'accord entre les 51 scénarios ECMWF ; en orange, prévision fragile"],
     ['<span class="d-bar"><s style="left:0;right:0"></s><i style="left:22%;right:22%;background:linear-gradient(90deg,#4aa3df,#f0953f)"></i></span>',
       'du mini au maxi ; bande grise : la plage des scénarios, des 10 % les plus froids aux 10 % les plus chauds ; le rond : la température actuelle'],
-    ['<span class="d-rain">2 mm<small>60 %</small></span>', 'pluie du jour, et la part des scénarios qui donnent au moins 1 mm'],
+    ['<span class="d-rain">2 mm<small>60 %</small></span>', 'pluie du jour, et la part des scénarios qui donnent au moins 1 mm sur la journée'],
     ['<span class="an hot">+3°</span>', 'écart avec les normales 1991-2020 de Météo-France (station la plus proche)'],
-  ], 'wide') + `<p>Touchez un jour pour son détail. En courbe : pointillés = normales, barres bleues = probabilité de pluie, fond grisé après 10 jours = une tendance, pas une prévision.</p>`,
+  ], 'wide') + `<p>Jusqu'à J+6, les chiffres sont ceux du modèle le plus fin. Dès J+7, un seul calcul peut tomber loin des autres : la liste montre la médiane des 51 scénarios ECMWF, la moitié est plus chaude, la moitié plus froide.</p><p>Touchez un jour pour son détail. En courbe : pointillés = normales, barres bleues = probabilité de pluie, fond grisé après 10 jours = une tendance, pas une prévision.</p>`,
   frost: `<div class="legend"><span><i style="background:var(--f4)"></i>gel fort (≤ −5°)</span><span><i style="background:var(--f3)"></i>gel</span>
     <span><i style="background:var(--f2)"></i>gel ou gelée blanche possible</span><span><i style="background:var(--f1)"></i>risque faible</span></div>
     <p>Minimale sous abri (à 2 m), au petit matin du jour indiqué. Par nuit claire et sans vent, le sol peut être 3 à 5° plus froid : gelée blanche possible dès 3°.</p>
-    <p>Le % sous la température : la part des 51 scénarios ECMWF qui descendent à 0° ou moins.</p>`,
+    <p>Le % sous la température : la part des 51 scénarios ECMWF qui descendent à 0° ou moins. Dès J+7, le niveau de risque ne vient que de ce %, et la température est leur médiane.</p>`,
   sun: `<p><b>Aube et crépuscule civils</b> : le soleil est à moins de 6° sous l'horizon, il fait encore assez clair pour se passer de lumière.</p>
     <p><b>Heure dorée</b> : à partir du moment où le soleil passe sous 6° au-dessus de l'horizon, la lumière devient chaude et rasante.</p>
     <p><b>Midi solaire</b> : le soleil au plus haut, rarement à midi pile.</p>
@@ -2086,6 +2178,7 @@ const HELP = {
   models: `<p>La température prévue par chacun des trois modèles, tant qu'ils se recouvrent. Quand les courbes se suivent, la prévision est solide. Quand elles s'écartent, l'app affiche le modèle le plus fin, mais c'est le signe de la prendre avec recul.</p>
     <p>Le tableau : la pluie par jour et par modèle. Case orange : un modèle voit de la pluie, un autre presque rien.</p>`,
   sources: `<p>Pour chaque heure, l'app prend le modèle le plus fin disponible : AROME, puis ARPEGE, puis l'ECMWF. Ce sont les modèles que fait tourner Météo-France ; sa prévision officielle y ajoute la retouche de ses prévisionnistes, d'où de petits écarts possibles avec son site.</p>
+    <p>Au passage d'un modèle à l'autre, leurs chiffres peuvent différer de plusieurs degrés : l'écart est fondu sur 12 heures au lieu de faire une marche.</p>
     <p>À droite : l'heure du run (le calcul du modèle) et quand il a été reçu.</p>
     <p>La vigilance (orange, rouge) n'est pas dans les données ouvertes sans clé : le lien « Vigilance » ouvre la carte officielle du département.</p>`,
   explore: `<p>Un lieu et un jour au choix, de 1940 à dans 14 jours. Par défaut : le même jour il y a un an.</p>
@@ -2291,7 +2384,7 @@ async function alertAction(kind) {
     if (kind === 'on') {
       const perm = await navigator.permissions.query({ name: 'periodic-background-sync' }).catch(() => ({ state: 'denied' }));
       if (perm.state !== 'granted') { alertMsg = "Chrome ne permet la vérification en arrière-plan qu'à une app installée : installez Ciel sur l'écran d'accueil, puis réessayez."; return renderAlert(); }
-      const p = { name: state.place.name, lat: state.place.lat, lon: state.place.lon };
+      const p = { name: state.place.name, lat: state.place.lat, lon: state.place.lon, ...(state.place.alt != null && { alt: state.place.alt }) };
       await reg.periodicSync.register('gel', { minInterval: 6 * HOUR });
       reg.active.postMessage({ type: 'gel-config', alert: p });
       store.set('alert', p);

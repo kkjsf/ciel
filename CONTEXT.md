@@ -54,11 +54,12 @@ ouvertes de Météo-France (Licence Ouverte Etalab) et de l'ECMWF (CC BY 4.0).
 
 | Horizon | Modèle | Id Open-Meteo |
 |---|---|---|
-| 0 à ~J+2 | AROME 1,5 km (Météo-France), + pluie et température **natives** au quart d'heure | `meteofrance_arome_france_hd` |
+| maintenant, 2 prochaines heures (v11) | AROME au quart d'heure **recalculé chaque heure** (température actuelle, pluie des 2 h) ; repli sur le quart d'heure du run AROME complet | `meteofrance_arome_france_hd_15min` (requête à part `now`) |
+| 0 à ~J+2 | AROME 1,5 km (Météo-France) | `meteofrance_arome_france_hd` |
 | idem, pictogramme et nébulosité | AROME 2,5 km (le HD ne fournit ni `weather_code` ni `cloud_cover`) | `meteofrance_arome_france0025` |
 | ~J+2 à ~J+4,5 | ARPEGE Europe 11 km (Météo-France) | `meteofrance_arpege_europe` |
 | J+4,5 à J+15 | ECMWF IFS 9 km (Météo-France l'utilise aussi au-delà de 4 jours) | `ecmwf_ifs` |
-| confiance, probas | ECMWF ENS 51 membres, agrégats journaliers par membre | `ecmwf_ifs025` (ensemble-api) |
+| confiance, probas ; **dès J+7 (v11) mini, maxi et pluie affichés = médiane des membres** | ECMWF ENS 51 membres, agrégats journaliers par membre | `ecmwf_ifs025` (ensemble-api) |
 | UV, air, pollens | Copernicus CAMS | air-quality-api |
 | normales 1991-2020, records | fiches climatologiques Météo-France (station la plus proche) | `normales/` précalculé |
 | Explorer : passé depuis l'automne 2022 | archives des prévisions AROME / ARPEGE / ECMWF | historical-forecast-api |
@@ -71,9 +72,17 @@ ouvertes de Météo-France (Licence Ouverte Etalab) et de l'ECMWF (CC BY 4.0).
 **Fusion** : pour chaque heure et chaque variable, la première valeur non nulle dans l'ordre
 AROME HD > AROME 2,5 > ARPEGE > ECMWF. La source d'une heure = le modèle qui a fourni sa
 température. Les heures de run viennent de `https://api.open-meteo.com/data/<modele>/static/meta.json`.
+**Relais (v11)** : au passage d'un modèle au suivant, le suivant est décalé de l'écart mesuré à la
+dernière heure commune, écart qui s'efface en 12 h (`blendRelays`, températures, rosée, pression,
+humidité, vent). Avant, ARPEGE reprenait 3° sous AROME d'une heure à l'autre.
+**Au-delà de J+6 (v11, `FAR = 7`)** : la liste et la courbe des 15 jours montrent la médiane des 51
+scénarios (`max50`, `min50`, `rain50`), le détail du jour rappelle les chiffres du run ECMWF (seul
+scénario tracé heure par heure) ; le pictogramme du run est corrigé s'il contredit la proba de pluie
+(`farCode`) ; les nuits lointaines n'ont qu'un niveau tiré de la part des scénarios qui gèlent
+(`farFrost` : 50 % gel, 25 % possible, 5 % faible).
 
-Requêtes par chargement : 1 forecast (4 modèles, ~110 Ko), 1 ensemble (~21 Ko), 1 qualité de
-l'air, 4 meta.json. Recherche de commune : **API Adresse** (`api-adresse.data.gouv.fr`,
+Requêtes par chargement : 1 forecast (4 modèles, ~110 Ko), 1 `now` (quart d'heure, v11), 1 ensemble
+(~21 Ko), 1 qualité de l'air, 5 meta.json. Recherche de commune : **API Adresse** (`api-adresse.data.gouv.fr`,
 `type=municipality`) ; commune d'une position GPS : `geo.api.gouv.fr/communes?lat&lon`.
 Soleil et lune calculés sur l'appareil (aucun appel).
 
@@ -108,7 +117,8 @@ Ce qui n'est **pas** dans l'app, et pourquoi :
 - **L'API privée de l'app Météo-France** (`webservice.meteofrance.com` avec le jeton embarqué dans
   leur app, celle qu'utilise la lib Python `meteofrance-api`) : écartée volontairement, ce n'est
   pas une API publique (et l'appel a été bloqué par le garde-fou de Claude Code).
-- **Observations de stations** : idem, portail-api avec clé.
+- **Observations de stations** : le temps réel passe par portail-api (clé), mais les **mesures
+  quotidiennes à J-1 sont ouvertes** (cf. Revue du 2026-11-04, point 5) : à précalculer.
 - La prévision officielle de meteofrance.com est retouchée par des prévisionnistes : petits écarts
   possibles avec l'app, c'est écrit dans la carte Sources.
 
@@ -120,8 +130,11 @@ python -m http.server 8129 --directory PERSO/ciel
 (entrée `ciel` dans `.claude/launch.json` à la racine du dépôt, ou `ciel-b` sur le port 8131 si une
 autre session tient déjà le 8129). Un lieu se partage par l'URL :
 `#l=lat,lon&n=Nom&cp=31000&d=Haute-Garonne`. Stockage local : `ciel:place`, `ciel:favs`,
-`ciel:theme`, `ciel:data:<lat,lon>` (les 6 derniers lieux, pour le hors ligne), `ciel:norm:<lat,lon>`
-(station et normales retenues pour un lieu, v5).
+`ciel:theme`, `ciel:cached` (ids des 6 derniers lieux), `ciel:norm:<lat,lon>` (station et normales
+retenues pour un lieu, v5). **Depuis la v11, les prévisions des 6 derniers lieux (≈ 250 Ko chacun,
+pour le hors ligne) sont dans IndexedDB** (base `ciel`, magasin `kv`, clés `data:<placeId>`) et plus
+dans le localStorage de 5 Mo partagé avec les autres apps de `kkjsf.github.io` ; la v11 efface les
+anciennes clés `ciel:data:*`. Repli en mémoire si IndexedDB manque.
 
 ## Versioning / déploiement
 
@@ -249,11 +262,26 @@ sommets », puis « ou alors utilise l'altitude Wikipédia »). Les deux sont co
 - Les sommets gardés d'avant (lieu en cours, favoris, liens sans `s=`) sont mis à jour seuls (`upgradeAlt`, appelé
   par `load`) ; la recherche IGN classe désormais le vrai Mont Blanc avant celui du Pas-de-Calais (57 m).
 
+**v11 (2026-11-04) : corrections de la revue du jour** (cf. « Revue complète du 2026-11-04 ») :
+- faille par lien partagé fermée : `cp` gardé seulement s'il fait 5 chiffres et encodé dans le lien
+  meteofrance.com, champs du lien bornés à 80 caractères, `s=` limité à `wiki`/`top`/`pt`/`user`,
+  coordonnées et altitude bornées ;
+- dès J+7, médiane des 51 scénarios dans les 15 jours et la courbe (repère « médiane ») ; gel lointain
+  sur la seule proba ;
+- relais AROME -> ARPEGE -> ECMWF fondus sur 12 h (vendredi 6/11 à Toulouse : 13,5° à 17h au lieu
+  d'une marche de 13,7 à 10,9°) ;
+- pluie des 2 h et température actuelle sur `meteofrance_arome_france_hd_15min` (run horaire, ligne
+  « AROME 15 min » dans Sources) ;
+- prévisions en cache dans IndexedDB ; worker : la page en cache est servie si le réseau traîne plus
+  de 3 s (la réponse tardive met le cache à jour) ; alerte gel calculée à l'altitude du lieu (à
+  réactiver pour un sommet déjà surveillé) ; pas de points de confiance pour « Auj. » l'après-midi ;
+  aides précisant les deux probas de pluie (≥ 0,1 mm par heure, ≥ 1 mm par jour).
+
 **Statut : v10 en ligne** (`b163340`, vérifiée en ligne le 2026-11-03 avec données réelles : un ancien lien Ossau à 2 847 m passe seul à 2 884 m, Petit Pic 2 808 m) (v1 publiée le 2026-11-02) sur **https://kkjsf.github.io/ciel/** (GitHub Pages,
 branche `main`, racine), dépôt public `git@github.com:kkjsf/ciel.git`, premier commit `782239f`.
-Vérifié en ligne : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à côté de
-ceux de Harmonic Atlas et Chess Analyst (non touchés). Pas encore vérifié en ligne avec des données
-réelles : Open-Meteo répondait 503 au moment de la mise en ligne.
+À la mise en ligne de la v1 : tous les fichiers en 200, worker `sw.js?v=1` actif, cache `ciel-v1` à
+côté de ceux de Harmonic Atlas et Chess Analyst (non touchés) ; Open-Meteo répondait alors 503, les
+données réelles ont été vérifiées en ligne à partir de la v7.
 
 Le dépôt est **public** : ne pas y écrire de lieu personnel (l'exemple de slug a été changé pour
 L'Isle-Jourdain avant le premier commit). Pas de CLI `gh` sur la machine : le dépôt a été créé et
@@ -392,6 +420,45 @@ v2, ses remplacements échouent (c'est voulu, la maquette est figée).
 Piège de test : avec le panneau navigateur de l'app masqué, `requestAnimationFrame` ne tourne plus,
 donc le défilement doux, l'`IntersectionObserver` (suivi de section de la variante B) et parfois les
 captures restent figés. Vérifier par le DOM, ou avec le panneau visible.
+
+## Revue complète du 2026-11-04 (sur la v10 ; tout corrigé en v11 sauf le point 5, qui demande des données nouvelles)
+
+Méthode : code lu en entier, requêtes de l'app rejouées pour Toulouse le 4/11 vers 15h, app servie en
+local (375 px, aucune erreur console), bilan d'octobre confronté aux mesures de Toulouse-Blagnac.
+
+1. **Faille XSS par lien partagé.** Le `cp=` du lien est inséré tel quel dans le `href` « Comparer sur
+   meteofrance.com » (`renderSources`), puis gardé dans `ciel:place` : rejoué à chaque ouverture, et
+   dans les favoris s'il est étoilé. Vérifié : `cp="><b id=x>` crée l'élément. L'origine
+   `kkjsf.github.io` est partagée avec Chess Analyst et Harmonic Atlas (même localStorage).
+   Corriger : `encodeURIComponent` sur `cp`, et `placeFromHash` ne garde qu'un `cp` à 5 chiffres.
+2. **Au-delà de J+6, un seul run déterministe ECMWF.** Le 4/11, 6 jours sur 15 ont un mini ou un maxi
+   hors de la plage p10-p90 des 51 scénarios (16/11 : 8° affichés, médiane 14° ; 11/11 : 23°, p90
+   21,5°). La carte Gel titrait « Gelée blanche possible dans la nuit de samedi à dimanche » (15/11,
+   J+11) quand 6 % des scénarios gèlent (mini médiane 6,9°). Piste : dès J+7, ou dès que le
+   déterministe sort de p10-p90, afficher la médiane des scénarios ; le gel lointain sur la proba.
+3. **Couture AROME -> ARPEGE.** AROME s'arrête vers J+2 en début d'après-midi (vendredi 13h) et
+   ARPEGE reprend 3° plus bas (11,9 -> 9,0 entre 13h et 14h) : le maxi du jour devient la dernière
+   heure d'AROME (11,9 alors qu'ECMWF monte à 13,8 et que 90 % des scénarios dépassent 13,7). ARPEGE
+   était 4 à 7° plus froid qu'AROME sur Toulouse ces jours-là. Piste : fondre les deux modèles sur
+   ~6 h ou recaler le suivant sur l'écart à la dernière heure commune.
+4. **Pluie des 2 h tirée d'un run de 5 h.** `minutely_15` de `meteofrance_arome_france_hd` vient du
+   run 3-horaire (valeurs identiques à l'horaire). Open-Meteo sert aussi
+   **`meteofrance_arome_france_hd_15min`**, refait toutes les heures (run 13 UTC disponible à
+   13h39 UTC, ~5 h d'horizon, requête testée). Latence mesurée d'AROME HD : run 09 UTC servi à 13h15 UTC.
+5. **Bilan du mois contre la station.** Octobre 2026 : l'app (centre de Toulouse) dit 37,7 mm (69 %),
+   nuit la plus froide le 22 à 7°, plus chaud le 2 à 27° ; Blagnac a mesuré 30,6 mm (56 %), 4,3° le
+   29, 27,7° le 6 (une part de l'écart tient au lieu : ville contre aéroport). Les mesures
+   quotidiennes des stations Météo-France sont **ouvertes et à jour à J-1** :
+   `meteofrance.s3.sbg.io.cloud.ovh.net/data/synchro_ftp/BASE/QUOT/Q_<dép>_latest-2025-2026_RR-T-Vent.csv.gz`
+   (348 Ko pour la Haute-Garonne, colonnes `NUM_POSTE`, `AAAAMMJJ`, `RR`, `TN`, `TX`), sans CORS : à
+   précalculer (GitHub Action quotidienne), comme `normales/`.
+6. **Stockage.** 254 Ko de localStorage par lieu en cache (jusqu'à 6, plus la montagne), sur une
+   origine partagée par trois apps (~5 Mo en tout) : passer ce cache en IndexedDB ou l'alléger.
+7. Plus petits : le worker attend le réseau sans délai avant de servir la page en cache (ouverture
+   lente avec un réseau faible, en montagne) ; points de confiance d'« Auj. » calculés sur la journée
+   entière de l'ensemble ; deux « probas de pluie » (≥ 0,1 mm par heure dans l'heure par heure,
+   ≥ 1 mm par jour dans les 15 jours) ; alerte gel calculée sans l'altitude d'un sommet. Liens
+   meteofrance.com, vigilance et fiche station vérifiés en 200.
 
 ## Idées pour la suite
 

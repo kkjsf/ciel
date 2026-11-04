@@ -24,12 +24,19 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  // Page : reseau d'abord (les mises a jour arrivent tout de suite), cache si hors ligne.
+  // Page : reseau d'abord (les mises a jour arrivent tout de suite), cache si hors ligne ou si le reseau
+  // traine plus de 3 s (en montagne) ; la reponse tardive met quand meme le cache a jour pour la fois suivante.
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req, { cache: 'no-cache' }).then(r => {
+    const cached = () => caches.match('./index.html', { cacheName: CACHE });
+    const net = fetch(req, { cache: 'no-cache' }).then(r => {
       if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put('./index.html', copy)); }
       return r;
-    }).catch(() => caches.match('./index.html', { cacheName: CACHE })));
+    });
+    e.respondWith(new Promise(ok => {
+      const slow = setTimeout(() => cached().then(hit => hit && ok(hit)), 3000);
+      net.then(r => { clearTimeout(slow); ok(r); }, () => { clearTimeout(slow); cached().then(ok); });
+    }));
+    e.waitUntil(net.catch(() => {}));
     return;
   }
   e.respondWith(caches.match(req, { cacheName: CACHE, ignoreSearch: true }).then(hit => hit || fetch(req)));
@@ -56,7 +63,8 @@ const deg = v => `${Math.round(v) + 0}°`.replace('-', '−');
 async function frostCheck(test) {
   const s = await readSettings(), p = s.alert;
   if (!p) return;
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}&timezone=Europe%2FParis&timeformat=unixtime`
+  // Un sommet : temperature recalculee a son altitude, comme dans l'app
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}${p.alt != null ? `&elevation=${p.alt}` : ''}&timezone=Europe%2FParis&timeformat=unixtime`
     + '&forecast_days=3&hourly=temperature_2m,cloud_cover,wind_speed_10m&models=meteofrance_seamless';
   const h = (await (await fetch(url)).json()).hourly, now = Date.now(), morning = fKey.format(now + 18 * 3600e3);
   const night = h.time.map((x, i) => [x * 1000, i]).filter(([t]) => {
@@ -77,7 +85,7 @@ async function frostCheck(test) {
   const body = `${p.name} : ${deg(tmin)} vers ${when}${clearCalm ? ', nuit claire et calme' : ''}.${level && tmin > 0 ? ' Le sol peut descendre sous zéro.' : ''}`;
   await self.registration.showNotification(title, {
     body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'gel-' + morning, lang: 'fr',
-    data: { url: `./#l=${p.lat.toFixed(4)},${p.lon.toFixed(4)}&n=${encodeURIComponent(p.name)}` },
+    data: { url: `./#l=${p.lat.toFixed(4)},${p.lon.toFixed(4)}&n=${encodeURIComponent(p.name)}${p.alt != null ? `&a=${p.alt}` : ''}` },
   });
   if (!test) await writeSettings({ ...s, notified: morning + p.name });
 }
